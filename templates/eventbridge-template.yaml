@@ -1,0 +1,29 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Stack template for EventBridgeStack
+
+Parameters:
+  EventRoleArn: { Type: String }
+  ECRRepoArn: { Type: String }
+  PipelineName: { Type: String }
+
+Resources:
+  DetectNewECRImageEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: detect-new-ecr-image
+      EventPattern:
+        source:
+          - "aws.ecr"
+        detail-type:
+          - "ECR Image Action"
+        detail:
+          action-type:
+            - "PUSH"
+          repository-name:
+            - !Ref ECRRepoArn
+          result:
+            - "SUCCESS"
+      Targets:
+        - Arn: !Sub arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${PipelineName}
+          RoleArn: !Ref EventRoleArn
+          Id: codepipeline-trigger

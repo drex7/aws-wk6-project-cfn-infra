@@ -1,0 +1,62 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Stack template for PostGreSQL Database infrastructure"
+
+Parameters:
+  VpcId: { Type: String }
+  PrivateSubnetIds: { Type: CommaDelimitedList }
+  DBSecurityGroup: { Type: String }
+  AppName: { Type: String }
+
+Resources:
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: DB subnet group for RDS
+      SubnetIds: !Ref PrivateSubnetIds
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}-db-subnet-group
+
+  DBCredentials:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub ${AppName}/rds/credentials
+      Description: RDS database credentials
+      GenerateSecretString:
+        SecretStringTemplate: '{"username": "db_user", "database_name": "gallery_app_db"}'
+        GenerateStringKey: "password"
+        PasswordLength: 16
+        ExcludeCharacters: '"@/\'
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}-db-secret
+        - Key: Environment
+          Value: !Ref AppName
+
+  DBInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      Engine: postgres
+      EngineVersion: "15"
+      DBInstanceClass: db.t3.micro
+      AllocatedStorage: 20
+      StorageType: gp3
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      VPCSecurityGroups: [!Ref DBSecurityGroup]
+      MasterUsername: !Sub "{{resolve:secretsmanager:${DBCredentials}::username}}"
+      MasterUserPassword: !Sub "{{resolve:secretsmanager:${DBCredentials}::password}}"
+      DBName: !Sub "{{resolve:secretsmanager:${DBCredentials}:SecretString:database_name}}"
+      MultiAZ: true
+      PubliclyAccessible: false
+      StorageEncrypted: true
+      BackupRetentionPeriod: 7
+      DeletionProtection: false
+      EnableCloudwatchLogsExports: [postgresql]
+
+Outputs:
+  DBEndpoint:
+    Value: !GetAtt DBInstance.Endpoint.Address
+  DBCredentialsArn:
+    Value: !Ref DBCredentials
+  DBCredentialsName:
+    Value: !Sub ${AppName}/rds/credentials

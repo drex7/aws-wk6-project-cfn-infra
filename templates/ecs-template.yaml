@@ -1,0 +1,175 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Stack template for ECS infrastructure
+
+Parameters:
+  AppName: { Type: String }
+  ECRRepoName: { Type: String, Default: gallery-xp-app-repo }
+  ECRImageTag: { Type: String, Default: latest }
+  ECSServiceName: { Type: String }
+  AppImageBucket: { Type: String, Description: S3 bucket for storing images }
+  PublicSubnetIds: { Type: CommaDelimitedList }
+  ALBSecurityGroup: { Type: String }
+  PrivateSubnetIds: { Type: CommaDelimitedList }
+  ProjectTag: { Type: String }
+
+Resources:
+  CloudWatchLogsGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /ecs/${AppName}-Task
+      RetentionInDays: 7
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: gallery-app-task-definition
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: "256"
+      Memory: "512"
+      ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt ECSTaskRole.Arn
+      NetworkMode: awsvpc
+      RuntimePlatform:
+        CpuArchitecture: X86_64
+        OperatingSystemFamily: LINUX
+      ContainerDefinitions:
+        - Name: !Sub "${AppName}Container"
+          Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECRRepoName}:${ECRImageTag}
+          PortMappings:
+            - ContainerPort: 3000
+              Protocol: tcp
+          Essential: true
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              mode: "non-blocking"
+              max-buffer-size: "25m"
+              awslogs-group: !Ref CloudWatchLogsGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+          Environment:
+            - Name: NUXT_AWS_S3_BUCKET
+              Value: !Ref AppImageBucket
+            - Name: NUXT_AWS_REGION
+              Value: !Ref AWS::Region
+          Secrets:
+            - Name: DATABASE_URL
+              ValueFrom: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${}"
+          HealthCheck:
+            Command:
+              - CMD-SHELL
+              - curl -f http://localhost:3000/ || exit 1
+            Interval: 30
+            Timeout: 5
+            Retries: 3
+            StartPeriod: 60
+      Tags:
+        - Key: Name
+          Value: !Sub "${AppName}Task"
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
+
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub "${AppName}Cluster"
+      CapacityProviders:
+        - FARGATE
+      ClusterSettings:
+        - Name: containerInsights
+          Value: disabled
+      Tags:
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
+
+  ECSService:
+    Type: AWS::ECS::Service
+    DependsOn: Listener
+    Properties:
+      Cluster: !Ref ECSCluster
+      DesiredCount: 0
+      LaunchType: FARGATE
+      TaskDefinition: !Ref TaskDefinition
+      EnableExecuteCommand: true
+      ServiceName: !Ref ECSServiceName
+      SchedulingStrategy: REPLICA
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          Subnets: !Ref PrivateSubnetIds
+          SecurityGroups:
+            - !Ref ContainerSecurityGroup
+          AssignPublicIp: DISABLED
+      LoadBalancers:
+        - ContainerName: !Sub "${AppName}Container"
+          ContainerPort: 3000
+          LoadBalancerName: !Ref AWS::NoValue
+          TargetGroupArn: !Ref BlueTargetGroup
+      PlatformVersion: LATEST
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 100
+      DeploymentController:
+        Type: CODE_DEPLOY
+      ServiceConnectConfiguration:
+        Enabled: false
+      Tags:
+        - Key: Name
+          Value: GalleryXPAppService
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
+
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Type: application
+      Name: ApplicationALB
+      SecurityGroups:
+        - !Ref ALBSecurityGroup
+      Subnets: !Ref PublicSubnetIds
+
+  BlueTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckPath: /
+      Name: BlueTargetGroup
+      Port: 80
+      Protocol: HTTP
+      TargetType: ip
+      HealthCheckProtocol: HTTP
+      VpcId: !Ref MyVPC
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: "300"
+
+  GreenTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckPath: /
+      Name: GreenTargetGroup
+      Port: 80
+      Protocol: HTTP
+      TargetType: ip
+      HealthCheckProtocol: HTTP
+      VpcId: !Ref MyVPC
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: "300"
+
+  Listener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref BlueTargetGroup
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: HTTP
+
+Outputs:
+  ALBDnsName: { Value: !GetAtt LoadBalancer.DNSName }
+  BlueTargetGroupArn: { Value: !Ref BlueTargetGroup }
+  GreenTargetGroupArn: { Value: !Ref GreenTargetGroup }
+  GreenTargetGroupName: { Value: !GetAtt GreenTargetGroup.TargetGroupName }
+  BlueTargetGroupName: { Value: !GetAtt BlueTargetGroup.TargetGroupName }
+  ALBListenerArn: { Value: !Ref Listener }
