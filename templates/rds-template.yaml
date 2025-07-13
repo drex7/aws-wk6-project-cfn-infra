@@ -20,7 +20,7 @@ Resources:
   DBCredentials:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !Sub ${AppName}/rds/credentials
+      Name: !Sub ${AppName}/db-credentials
       Description: RDS database credentials
       GenerateSecretString:
         SecretStringTemplate: '{"username": "db_user", "database_name": "gallery_app_db"}'

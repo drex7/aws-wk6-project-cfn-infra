@@ -2,7 +2,6 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: Stack template for networking related resources
 
 Parameters:
-  VpcId: { Type: String }
   AppName: { Type: String }
   VpcCidr: { Type: String, Default: 10.0.0.0/16 }
   PrivateSubnetCidrs: { Type: CommaDelimitedList }
@@ -116,28 +115,28 @@ Resources:
       GatewayId: !Ref InternetGateway
 
   # NAT Gateway
-  NatGatewayEIP:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
+  # NatGatewayEIP:
+  #   Type: AWS::EC2::EIP
+  #   Properties:
+  #     Domain: vpc
 
-  NatGateway:
-    Type: AWS::EC2::NatGateway
-    Properties:
-      AllocationId: !GetAtt NatGatewayEIP.AllocationId
-      SubnetId: !Ref PublicSubnet1
-      Tags:
-        - Key: Name
-          Value: MyVPC-NAT
-        - Key: lab
-          Value: !Sub "${ProjectTag}"
+  # NatGateway:
+  #   Type: AWS::EC2::NatGateway
+  #   Properties:
+  #     AllocationId: !GetAtt NatGatewayEIP.AllocationId
+  #     SubnetId: !Ref PublicSubnet1
+  #     Tags:
+  #       - Key: Name
+  #         Value: MyVPC-NAT
+  #       - Key: lab
+  #         Value: !Sub "${ProjectTag}"
 
   PrivateRoute:
     Type: AWS::EC2::Route
     Properties:
       RouteTableId: !Ref PrivateRouteTable
       DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId: !Ref NatGateway
+      # NatGatewayId: !Ref NatGateway
 
   # Route Table Associations
   PublicSubnet1RouteTableAssociation:
@@ -214,9 +213,9 @@ Resources:
           ToPort: 5432
           SourceSecurityGroupId: !Ref ContainerSecurityGroup
           Description: Allows inbound traffic from ECS containers to RDS PostgreSQL
-      VpcId: !Ref RDSVPC
+      VpcId: !Ref MyVPC
 
-  VPCEndpointSG:
+  VPCEndpointSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Security Group for VPC Endpoints
@@ -233,20 +232,20 @@ Resources:
     Type: AWS::EC2::VPCEndpoint
     Properties:
       ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
-      VpcId: !Ref VpcId
-      RouteTableIds: [!Ref PrivateRouteTable]
+      VPCid: !Ref MyVPC
       VpcEndpointType: Gateway
-      PolicyDocument:
-        Statement:
-          [{ Action: "s3:*", Effect: Allow, Principal: "*", Resource: "*" }]
+      RouteTableIds: [!Ref PrivateRouteTable]
+      # PolicyDocument:
+      #   Statement:
+      #     [{ Action: "s3:*", Effect: Allow, Principal: "*", Resource: "*" }]
 
   ECRDockerEndpoint:
     Type: AWS::EC2::VPCEndpoint
     Properties:
       ServiceName: !Sub com.amazonaws.${AWS::Region}.ecr.dkr
-      VpcId: !Ref VpcId
+      VPCid: !Ref MyVPC
       VpcEndpointType: Interface
-      SecurityGroupIds: [!Ref VPCEndpointSG]
+      SecurityGroupIds: [!Ref VPCEndpointSecurityGroup]
       SubnetIds: [!Ref PrivateSubnet1, !Ref PrivateSubnet2]
       PrivateDnsEnabled: true
 
@@ -255,8 +254,8 @@ Resources:
     Properties:
       ServiceName: !Sub com.amazonaws.${AWS::Region}.ecr.api
       VpcEndpointType: Interface
-      VpcId: !Ref VpcId
-      SecurityGroupIds: [!Ref VPCEndpointSG]
+      VPCid: !Ref MyVPC
+      SecurityGroupIds: [!Ref VPCEndpointSecurityGroup]
       SubnetIds: [!Ref PrivateSubnet1, !Ref PrivateSubnet2]
       PrivateDnsEnabled: true
 
@@ -265,8 +264,8 @@ Resources:
     Properties:
       ServiceName: !Sub com.amazonaws.${AWS::Region}.logs
       VpcEndpointType: Interface
-      VpcId: !Ref VpcId
-      SecurityGroupIds: [!Ref VPCEndpointSG]
+      VPCid: !Ref MyVPC
+      SecurityGroupIds: [!Ref VPCEndpointSecurityGroup]
       SubnetIds: [!Ref PrivateSubnet1, !Ref PrivateSubnet2]
       PrivateDnsEnabled: true
 
@@ -275,8 +274,18 @@ Resources:
     Properties:
       ServiceName: !Sub com.amazonaws.${AWS::Region}.secretsmanager
       VpcEndpointType: Interface
-      VpcId: !Ref VpcId
-      SecurityGroupIds: [!Ref VPCEndpointSG]
+      VPCid: !Ref MyVPC
+      SecurityGroupIds: [!Ref VPCEndpointSecurityGroup]
+      SubnetIds: [!Ref PrivateSubnet1, !Ref PrivateSubnet2]
+      PrivateDnsEnabled: true
+
+  SSMEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.ssm
+      VpcEndpointType: Interface
+      VPCid: !Ref MyVPC
+      SecurityGroupIds: [!Ref VPCEndpointSecurityGroup]
       SubnetIds: [!Ref PrivateSubnet1, !Ref PrivateSubnet2]
       PrivateDnsEnabled: true
 

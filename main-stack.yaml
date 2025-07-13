@@ -1,0 +1,171 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Top-level stack template that deploys a complete CI/CD pipeline with ECR, ECS, CodeBuild, VPC components and RDS.
+
+Parameters:
+  VpcCidr: { Type: String }
+  PublicSubnetCidrs: { Type: CommaDelimitedList }
+  PrivateSubnetCidrs: { Type: CommaDelimitedList }
+  AppName: { Type: String}
+  VpcCidr: { Type: String, Default: 10.0.0.0/16 }
+  ProjectTag: { Type: String, Default: "week6-lab1" }
+  ECRRepoName: { Type: String, Default: gallery-app-v2-ecr-repo }
+  ECRImageTag: { Type: String, Default: latest }
+  ECSServiceName: { Type: String, Default: GalleryXPAppService }
+  FullRepositoryId: { Type: String, Default: drex7/aws-wk6-project-app }
+  BranchName: { Type: String, Default: main }
+  ContainerPort: { Type: String, Default: 3000 }
+
+Resources:
+  NetworkingStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./templates/networking-template.yaml
+      Parameters:
+        AppName: !Ref AppName
+        VpcCidr: !Ref VpcCidr
+        PublicSubnetCidrs: !Join [',', !Ref PublicSubnetCidrs]
+        PrivateSubnetCidrs: !Join [',', !Ref PrivateSubnetCidrs]
+        ProjectTag: !Ref ProjectTag
+      
+  # Include the RDS stack
+  RDSStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: /path_to_template/rds-template.yaml
+      Parameters:
+        VpcId: !GetAtt NetworkingStack.Outputs.VpcId
+        PrivateSubnetIds: !GetAtt NetworkingStack.Outputs.PrivateSubnetIds
+        DBSecurityGroup: !GetAtt NetworkingStack.Outputs.DBSecurityGroup
+        AppName: !Ref AppName
+
+  # Include the IAM stack
+  IAMStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./templates/iam-template.yaml
+      Parameters:
+        AppName: !Ref AppName
+        ProjectTag: !Ref ProjectTag
+        ECRRepoName: !Ref ECRRepoName
+
+  S3Stack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: [NetworkingStack, IAMStack]
+    Properties:
+      TemplateURL: ./templates/s3-template.yaml
+      Parameters:
+        AppName: !Ref AppName
+        ALBDnsName: !GetAtt NetworkingStack.Outputs.ALBDnsName
+        ECSTaskRoleArn: !GetAtt IAMStack.Outputs.ECSTaskRoleArn
+        CodeBuildRoleArn: !GetAtt IAMStack.Outputs.CodeBuildRoleArn
+        CodeDeployRoleArn: !GetAtt IAMStack.Outputs.CodeDeployRoleArn
+        CodePipelineRoleArn: !GetAtt IAMStack.Outputs.CodePipelineRoleArn
+        EventBridgeRoleArn: !GetAtt IAMStack.Outputs.EventBridgeRoleArn
+
+
+  # Include ECS Stack
+  ECSStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: [NetworkingStack, RDSStack, IAMStack, S3Stack]
+    Properties:
+      TemplateURL: ./templates/ecs-template.yaml
+      Parameters:
+        ALBSecurityGroup: !GetAtt NetworkingStack.Outputs.ALBSecurityGroup
+        AppImageBucket: !GetAtt S3Stack.Outputs.AppImageBucket
+        AppName: !Ref AppName
+        ContainerPort: !Ref ContainerPort
+        ContainerSecurityGroup: !GetAtt NetworkingStack.Outputs.ContainerSecurityGroup
+        DBEndpoint: !GetAtt RDSStack.Outputs.DBEndpoint
+        ECRImageTag: !Ref ECRImageTag
+        ECRRepoName: !Ref ECRRepoName
+        ECSServiceName: !Ref ECSServiceName
+        ECSTaskExecutionRoleArn: !GetAtt IAMStack.Outputs.ECSTaskExecutionRoleArn
+        ECSTaskRoleArn: !GetAtt IAMStack.Outputs.ECSTaskRoleArn
+        ProjectTag: !Ref ProjectTag
+        PrivateSubnetIds: !GetAtt NetworkingStack.Outputs.PrivateSubnetIds
+        PublicSubnetIds: !GetAtt NetworkingStack.Outputs.PublicSubnetIds
+        VpcId: !GetAtt NetworkingStack.Outputs.VpcId
+        
+
+  # Include the CI/CD stack
+  CICDStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./templates/ci-cd-template.yaml
+      Parameters:
+        AppName: !Ref AppName
+        CodeDeployRoleArn: !GetAtt IAMStack.Outputs.CodeDeployRoleArn
+        CodeBuildRoleArn: !GetAtt IAMStack.Outputs.CodeBuildRoleArn 
+        CodeConnectionsActionRoleArn: !GetAtt IAMStack.Outputs.CodeConnectionsActionRoleArn
+        ECRRepoName: !GetAtt ECSStack.Outputs.ECRRepoName
+        ContainerName: !GetAtt ECSStack.Outputs.ContainerName
+        ContainerPort: !Ref ContainerPort
+        ECRRepoArn: !GetAtt ECSStack.Outputs.ECRRepoArn
+        ECRRepoName: !GetAtt ECSStack.Outputs.ECRRepoName
+        ECSAppName: !GetAtt ECSStack.Outputs.ECSAppName
+        ECSClusterName: !GetAtt ECSStack.Outputs.ECSClusterName
+        ECSServiceName: !GetAtt ECSStack.Outputs.ECSServiceName
+        EventBridgeRoleArn: !GetAtt IAMStack.Outputs.EventBridgeRoleArn
+        FullRepositoryId: !Ref FullRepositoryId
+        GitHubBranch: !Ref BranchName
+        GreenTargetGroupName: !GetAtt ECSStack.Outputs.GreenTargetGroupName
+        PipelineArtifactBucketName: !GetAtt S3Stack.Outputs.PipelineArtifactBucketName
+        S3BucketArn: !GetAtt S3Stack.Outputs.S3BucketArn
+
+  # CodeDeployStack:
+  #   Type: AWS::CloudFormation::Stack
+  #   DependsOn: ECSStack
+  #   Properties:
+  #     TemplateURL: ./templates/codedeploy-template.yaml
+  #     Parameters:
+  #       AppName: !Ref AppName
+  #       ECSClusterName: !GetAtt ECSStack.Outputs.ECSClusterName
+  #       ECSServiceName: !GetAtt ECSStack.Outputs.ECSServiceName
+  #       BlueTargetGroupName: !GetAtt ECSStack.Outputs.BlueTargetGroupName
+  #       GreenTargetGroupName: !GetAtt ECSStack.Outputs.GreenTargetGroupName
+  #       AlbListenerArn: !GetAtt ECSStack.Outputs.ALBListenerArn
+  #       CodeDeployRoleArn: !GetAtt IAMStack.Outputs.CodeDeployRoleArn
+  #       ProjectTag: !Ref ProjectTag
+
+  # CodePipelineStack:
+  #   Type: AWS::CloudFormation::Stack
+  #   DependsOn: [ECSStack, CodeDeployStack, S3Stack]
+  #   Properties:
+  #     TemplateURL: ./templates/codepipeline-template.yaml
+  #     Parameters:
+  #       ECSAppName: !GetAtt ECSStack.Outputs.ECSAppName
+  #       ECRRepoName: !GetAtt ECSStack.Outputs.ECRRepoName
+  #       ContainerName: !GetAtt ECSStack.Outputs.ContainerName
+  #       ContainerImageTag: !Ref ECRImageTag
+  #       ContainerPort: !Ref ContainerPort
+  #       TaskDefinitionArn: !GetAtt ECSStack.Outputs.TaskDefinitionArn
+  #       ArtifactsBucketName: !GetAtt S3Stack.Outputs.ArtifactsBucketName
+  #       ECSClusterName: !GetAtt ECSStack.Outputs.ECSClusterName
+  #       ECSServiceName: !GetAtt ECSStack.Outputs.ECSServiceName
+  #       PipelineArtifactBucketName: !GetAtt S3Stack.Outputs.PipelineArtifactBucketName
+  #       CodeDeployAppName: !GetAtt CodeDeployStack.Outputs.CodeDeployAppNameName
+  #       CodeDeployDeploymentGroupName: !GetAtt CodeDeployStack.Outputs.CodeDeployDeploymentGroupName
+  #       CodePipelineRoleArn: !GetAtt IAMStack.Outputs.CodePipelineRoleArn
+  #       CodeBuildRoleArn: !GetAtt IAMStack.Outputs.CodeBuildRoleArn
+  #       FullRepositoryId: !Ref FullRepositoryId
+
+  # EventBridgeStack:
+  #   Type: AWS::CloudFormation::Stack
+  #   DependsOn: [CodePipelineStack, IAMStack, ECSStack]
+  #   Properties:
+  #     TemplateURL: ./templates/eventbridge-template.yaml
+  #     Parameters:
+  #       ECRRepoArn: !GetAtt ECSStack.Outputs.ECRRepoArn
+  #       PipelineStack: !GetAtt CodePipelineStack.Outputs.BlueGreenDeploymentPipelineArn
+  #       EventBridgeRoleArn: !GetAtt IAMStack.Outputs.EventBridgeRoleArn
+  #       PipelineArtifactBucketName: !GetAtt S3Stack.Outputs.PipelineArtifactBucketName
+
+Outputs:
+  LoadBalancerDNS:
+    Value: !GetAtt ECSStack.Outputs.ALBDnsName
+  S3BucketName:
+    Value: !GetAtt S3Stack.Outputs.S3BucketName
+  RDSSecretArn:
+    Value: !GetAtt RDSStack.Outputs.DBSecretArn
+  ECRRepoURI:
+    Value: !GetAtt ECSStack.Outputs.ECRRepoURI

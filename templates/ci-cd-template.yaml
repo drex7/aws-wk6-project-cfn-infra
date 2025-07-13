@@ -1,138 +1,243 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Stack template for CI/CD related resources
+Description: CICD stack with CodePipeline for building and deploying the web application
 
 Parameters:
-  PipelineName:
-    Type: String
-    Description: The name of the CodePipeline to trigger
+  ALBListenerArn: { Type: String }
+  AppName: { Type: String }
+  BlueTargetGroupName: { Type: String }
+  BranchName: { Type: String }
+  CodeBuildRoleArn: { Type: String }
+  CodeDeployRoleArn: { Type: String }
+  # CodeConnectionsActionRoleArn: { Type: String }
+  CodePipelineRoleArn: { Type: String }
+  ContainerName: { Type: String }
+  ContainerPort: { Type: Number }
+  ECRRepoArn: { Type: String }
+  ECRRepoName: { Type: String }
+  ECSAppName: { Type: String }
+  ECSClusterName: { Type: String }
+  ECSServiceName: { Type: String }
+  EventBridgeRoleArn: { Type: String }
+  FullRepositoryId: { Type: String }
+  GreenTargetGroupName: { Type: String }
+  PipelineArtifactBucketName: { Type: String }
 
-Resources:  
-  # CodeBuild Project
-  CodeBuildProject:
-    Type: AWS::CodeBuild::Project
+Resources:
+  # EventBridge Rule to detect new ECR image push events
+  DetectNewECRImageEventRule:
+    Type: AWS::Events::Rule
     Properties:
-      Name: MyAppBuild
-      ServiceRole: !GetAtt CodeBuildRole.Arn
-      Artifacts:
-        Type: CODEPIPELINE
-      Environment:
-        Type: LINUX_CONTAINER
-        Image: aws/codebuild/standard:5.0
-        ComputeType: BUILD_GENERAL1_SMALL
-        PrivilegedMode: true
-        EnvironmentVariables:
-          - Name: AWS_DEFAULT_REGION
-            Value: !Ref AWS::Region
-          - Name: AWS_ACCOUNT_ID
-            Value: !Ref AWS::AccountId
-          - Name: IMAGE_REPO_NAME
-            Value: !Ref ECRRepository
-          - Name: IMAGE_TAG
-            Value: latest
-          - Name: ARTIFACT_BUCKET
-            Value: !Ref PipelineArtifactBucket
-      Source:
-        Type: CODEPIPELINE
-        BuildSpec: |
-          version: 0.2
-          phases:
-            pre_build:
-              commands:
-                - echo Logging in to Amazon ECR...
-                - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
-            build:
-              commands:
-                - echo Build started
-                - echo Building the Docker image...
-                - docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG .
-                - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG
-            post_build:
-              commands:
-                - echo Pushing the Docker image...
-                - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG
-                - echo Writing image definitions file...
-                - printf '[{"name":"%s","imageUri":"%s"}]' $CONTAINER_NAME $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG > imagedefinitions.json
-                - echo Writing appspec.yaml...
-                - |
-                  cat << EOF > appspec.yaml
-                  version: 0.0
-                  Resources:
-                    - TargetService:
-                        Type: AWS::ECS::Service
-                        Properties:
-                          TaskDefinition: "${TASK_DEFINITION_ARN}"
-                          LoadBalancerInfo:
-                            ContainerName: "${CONTAINER_NAME}"
-                            ContainerPort: ${CONTAINER_PORT}
-                  EOF
-                - echo Uploading artifacts to S3...
-                - aws s3 cp imagedefinitions.json s3://$ARTIFACT_BUCKET/imagedefinitions/$IMAGE_REPO_NAME/$IMAGE_TAG/imagedefinitions.json
-                - aws s3 cp appspec.yaml s3://$ARTIFACT_BUCKET/appspec/$IMAGE_REPO_NAME/$IMAGE_TAG/appspec.yaml
-          artifacts:
-            files:
-              - imagedefinitions.json
-              - appspec.yaml
-      Cache:
-        Type: NO_CACHE
-      EnvironmentVariables:
-        - Name: CONTAINER_NAME
-          Value: !Ref ContainerName
-        - Name: TASK_DEFINITION_ARN
-          Value: !Ref TaskDefinition
-        - Name: CONTAINER_PORT
-          Value: !Ref ContainerPort
+      Name: detect-new-ecr-image
+      EventPattern:
+        source: [ "aws.ecr"]
+        detail-type: [ "ECR Image Action"]
+        detail:
+          action-type: [ "PUSH"]
+          repository-name: [ !Ref ECRRepoArn ]
+          result: [ "SUCCESS" ]
+      Targets:
+        - Arn: !Ref BlueGreenDeploymentPipeline
+          Id: StartPipelineExecution
+          RoleArn: !Ref EventBridgeRoleArn
+          Id: DeployPipelineTarget
+          InputTransformer:
+            InputPathsMap:
+              image-tag: $.detail.image-tag
+              repository-name: $.detail.repository-name
+            InputTemplate: |
+              {
+                "source": [
+                  {
+                    "s3": {
+                      "bucket": "<Bucket>",
+                      "key": "artifacts/<repository-name>/<image-tag>/imagedefinitions.json"
+                    }
+                  }
+                ]
+              }
+            InputTemplateParameters:
+              Bucket: !Ref PipelineArtifactBucketName
+              # RepoName: !Ref ECRRepository
+              # ImageTag: <imageTag>
 
-  # Build CodePipeline (for building and pushing to ECR)
-  BuildCodePipeline:
+  # CodeDeploy Application and Deployment Group for Blue/Green deployment
+  CodeDeployApp:
+    Type: AWS::CodeDeploy::Application
+    Properties:
+      ApplicationName: !Sub "${AppName}CodeDeployApp"
+      ComputePlatform: ECS
+
+  DeploymentGroup:
+    Type: AWS::CodeDeploy::DeploymentGroup
+    Properties:
+      ApplicationName: !Ref CodeDeployApp
+      DeploymentGroupName: !Sub "${AppName}DeploymentGroup"
+      DeploymentConfigName: CodeDeployDefault.ECSAllAtOnce
+      ServiceRoleArn: !Ref CodeDeployRoleArn
+      AutoRollbackConfiguration:
+        Enabled: true
+        Events: [DEPLOYMENT_FAILURE]
+      BlueGreenDeploymentConfiguration:
+        TerminateBlueInstancesOnDeploymentSuccess:
+          Action: TERMINATE
+          TerminationWaitTimeInMinutes: 2
+        DeploymentReadyOption:
+          ActionOnTimeout: CONTINUE_DEPLOYMENT
+          WaitTimeInMinutes: 0
+      DeploymentStyle:
+        DeploymentType: BLUE_GREEN
+        DeploymentOption: WITH_TRAFFIC_CONTROL
+      LoadBalancerInfo:
+        TargetGroupPairInfoList:
+          - TargetGroups:
+              - Name: !Ref GreenTargetGroupName
+              - Name: !Ref BlueTargetGroupName
+            ProdTrafficRoute:
+              ListenerArns:
+                - !Ref ALBListenerArn
+      ECSServices:
+        - ClusterName: !Ref ECSClusterName
+          ServiceName: !Ref ECSServiceName
+
+  # CodePipeline for Blue/Green deployment using CodeDeploy
+  BlueGreenDeploymentPipeline:
     Type: AWS::CodePipeline::Pipeline
     Properties:
-      RoleArn: !GetAtt BuildCodePipelineRole.Arn
+      Name: !Sub ${AppName}-DeployPipeline
+      RoleArn: !Ref CodePipelineRoleArn
+      PipelineType: V2
+      ExecutionMode: QUEUED
       ArtifactStore:
         Type: S3
-        Location: !Ref PipelineArtifactBucket
+        Location: !Ref PipelineArtifactBucketName
       Stages:
         - Name: Source
           Actions:
-            - Name: Source
+            - Name: S3Source
               ActionTypeId:
                 Category: Source
-                Owner: ThirdParty
-                Provider: GitHub
-                Version: '1'
-              OutputArtifacts:
-                - Name: SourceArtifact
+                Owner: AWS
+                Provider: S3
+                Version: "1"
               Configuration:
-                Owner: !Ref GitHubOwner
-                Repo: !Ref GitHubRepo
-                Branch: !Ref GitHubBranch
-                OAuthToken: !Ref GitHubOAuthToken
+                S3Bucket: !Ref PipelineArtifactBucketName
+                S3ObjectKey: !Sub "artifacts/${ECRRepoName}/latest/imagedefinitions.json"
                 PollForSourceChanges: false
+              OutputArtifacts:
+                - Name: DeployArtifact
               RunOrder: 1
-        - Name: Build
+        - Name: ECSDeploy
           Actions:
-            - Name: Build
+            - Name: CodeDeploy
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CodeDeployToECS
+                Version: "1"
+              RunOrder: 1
+              Configuration:
+                ApplicationName: !Ref CodeDeployApp
+                DeploymentGroupName: !Ref DeploymentGroup
+                TaskDefinitionTemplateArtifact: DeployArtifact
+                AppSpecTemplateArtifact: DeployArtifact
+                Image1ContainerName: IMAGE1_NAME
+                Image1ArtifactName: DeployArtifact
+              InputArtifacts:
+                - Name: DeployArtifact
+
+  # CodePipeline for ECR deployment using CodeBuild
+  BuildPipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: !Sub ${ECSAppName}-ecr-deploy-pipeline
+      ArtifactStore:
+        Location: !Ref PipelineArtifactBucketName
+        Type: S3
+      ExecutionMode: QUEUED
+      PipelineType: V2
+      RoleArn: !Ref CodePipelineRoleArn
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: CodeConnections
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeStarSourceConnection
+                Version: "1"
+              Configuration:
+                ConnectionArn: !Sub arn:${AWS::Partition}:codeconnections:${AWS::Region}:${AWS::AccountId}:connection/43066aab-299c-45ea-a754-bbc26be2696e
+                FullRepositoryId: !Ref FullRepositoryId
+                BranchName: !Ref BranchName
+              OutputArtifacts:
+                - Name: SourceOutput
+              # RoleArn: !Ref CodeConnectionsActionRoleArn
+              RunOrder: 1
+          OnFailure:
+            Result: RETRY
+        - Name: Build_and_Deploy
+          OnFailure:
+            Result: ROLLBACK
+          Actions:
+            - Name: Docker_Build_Tag_and_Push
               ActionTypeId:
                 Category: Build
                 Owner: AWS
-                Provider: CodeBuild EdgexceutionRole: !GetAtt CodeBuildRole.Arn
-              InputArtifacts:
-                - Name: SourceArtifact
-              OutputArtifacts:
-                - Name: BuildArtifact
+                Provider: CodeBuild
+                Version: "1"
               Configuration:
-                ProjectName: !Ref CodeBuildProject
+                ProjectName: ECRDeployProject
+              InputArtifacts:
+                - Name: SourceOutput
+              RoleArn: !Ref CodeBuildRoleArn
               RunOrder: 1
 
-  # CodePipeline Webhook for GitHub
-  BuildCodePipelineWebhook:
-    Type: AWS::CodePipeline::Webhook
+  # CodeBuild Project to build & deploy image to ECR
+  ECRDeployProject:
+    Type: AWS::CodeBuild::Project
     Properties:
-      Authentication: GITHUB_HMAC
-      AuthenticationConfiguration:
-        SecretToken: !Ref GitHubOAuthToken
-      Filters:
-        - JsonPath: $.ref
-          MatchEquals: refs/heads/{Branch}
-      TargetPipeline: !Ref BuildCodePipeline
-      TargetAction: Source
-      RegisterWithThirdParty: true
+      Name: !Sub ${AWS::StackName}-ECRBuildProject
+      Description: Build and deploy Docker image to ECR
+      ServiceRole: !Ref CodeBuildRoleArn
+      SourceVersion: main
+      Artifacts:
+        Type: S3
+        Location: !Ref PipelineArtifactBucketName
+        Name: build-artifact
+        NamespaceType: BUILD_ID
+        Packaging: ZIP
+      Environment:
+        Type: LINUX_LAMBDA_CONTAINER
+        ComputeType: BUILD_LAMBDA_1GB
+        Image: aws/codebuild/amazonlinux-x86_64-lambda-standard:nodejs20
+        EnvironmentVariables:
+          - Name: ECS_CLUSTER
+            Value: !Ref ECSClusterName
+          - Name: ECS_SERVICE
+            Value: !Ref ECSServiceName
+          - Name: CONTAINER_NAME
+            Value: !Ref ContainerName
+          - Name: CONTAINER_PORT
+            Value: !Ref ContainerPort
+          - Name: IMAGE_NAME
+            Value: !Sub ${ECSAppName}
+          - Name: ECR_REPO_NAME
+            Value: !Sub ${ECRRepoName}
+          - Name: ARTIFACT_BUCKET
+            Value: !Ref PipelineArtifactBucketName
+          - Name: ECR_REPOSITORY_URI
+            Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECRRepoName}"
+      Source:
+        Type: GITHUB
+        Auth:
+          Type: OAUTH
+          Location: https://github.com/drex7/aws-wk6-project-cfn-infra
+          GitCloneDepth: 1
+      Cache:
+        Type: NO_CACHE
+
+
+Outputs:
+  BlueGreenDeploymentPipelineArn: { Value: !GetAtt BlueGreenDeploymentPipeline.Arn }
+  ECRDeployCodePipelineArn: { Value: !GetAtt BuildPipeline.Arn }
+  ECRDeployProjectArn: { Value: !GetAtt ECRDeployProject.Arn }

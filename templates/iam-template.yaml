@@ -2,14 +2,13 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: Stack template for iam related resources
 
 Parameters:
-  PipelineName:
-    Type: String
-    Description: The name of the CodePipeline to trigger
-  ProjectTag: { Type: String }
   AppName: { Type: String }
+  ProjectTag: { Type: String }
+  ECRRepoName: { Type: String }
+  # PipelineArtifactBucketArn: { Type: String }
 
 Resources:
-  EventRole:
+  EventBridgeRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -24,11 +23,13 @@ Resources:
             Statement:
               - Effect: Allow
                 Action: codepipeline:StartPipelineExecution
-                Resource: !Sub arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${PipelineName}
+                Resource: !Sub arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:pipeline/${AppName}-DeployPipeline
 
+  # IAM Role for CodePipeline
   CodePipelineRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Sub ${AppName}-CodePipelineRole
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -36,6 +37,9 @@ Resources:
             Principal:
               Service: codepipeline.amazonaws.com
             Action: sts:AssumeRole
+            Condition: 
+              StringEquals: 
+                aws:SourceAccount: !Sub '${AWS::AccountId}'
       Policies:
         - PolicyName: !Sub ${AppName}-CodePipelinePolicy
           PolicyDocument:
@@ -43,36 +47,30 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - s3:*
-                  - codebuild:*
-                  - codedeploy:*
-                  - ecr:*
-                  - ecs:*
-                Resource: "*"
-
-    # IAM Role for Deploy CodePipeline
-  DeployCodePipelineRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: codepipeline.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: DeployCodePipelinePolicy
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
+                  - codebuild:StartBuild
+                  - codebuild:BatchGetBuilds
+                Resource: "*"       
               - Effect: Allow
                 Action:
-                  - s3:*
-                  - codedeploy:*
-                  - ecs:*
+                  - codedeploy:CreateDeployment
+                  - codedeploy:GetDeployment
+                  - codedeploy:GetDeploymentConfig
+                  - codedeploy:GetApplication
+                  - codedeploy:GetApplicationRevision
+                  - codedeploy:RegisterApplicationRevision
+                  - codedeploy:RegisterTaskDefinition
+                Resource: "*"  
+              - Effect: Allow
+                Action:
                   - iam:PassRole
-                Resource: "*"
+                Resource: 
+                  - !GetAtt CodeDeployRole.Arn
+                  - !GetAtt CodeBuildRole.Arn
+              - Effect: Allow
+                Action:
+                  - codeconnections:UseConnection
+                Resource:
+                  - !Sub arn:aws:codeconnections:${AWS::Region}:${AWS::AccountId}:connection/*
 
   # IAM Role for CodeBuild
   CodeBuildRole:
@@ -91,21 +89,25 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - logs:CreateLogGroup
-                  - logs:CreateLogStream
-                  - logs:PutLogEvents
-                  - ecr:*
-                  - s3:*
-                  - ecs:*
+                  - codebuild:*
                 Resource: "*"
               - Effect: Allow
                 Action:
-                  - iam:PassRole
-                Resource: arn:aws:iam::796973518232:role/${AppName}-ECSTaskExecutionRole
-                Condition:
-                  StringLike:
-                    iam:PassedToService: "ecs-tasks.amazonaws.com"
-
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*'
+              - Effect: Allow
+                Action:
+                  - ecr:GetAuthorizationToken
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                  - ecr:PutImage
+                  - ecr:UploadLayerPart
+                Resource: 
+                  - !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/${ECRRepoName}
+              
   CodeDeployRole:
     Type: AWS::IAM::Role
     Properties:
@@ -143,11 +145,9 @@ Resources:
                 Action:
                   - "ssm:GetParameters"
                   - "secretsmanager:GetSecretValue"
-                  - "kms:Decrypt"
                 Resource:
                   - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*"
                   - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:*"
-                  - !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/*"
       Tags:
         - Key: Name
           Value: !Sub "${AppName}-ECSTaskExecutionRole"
@@ -174,32 +174,24 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
       Policies:
-        - PolicyName: access-secrets-ssm
+        - PolicyName: AccessSecretsPolicy
           PolicyDocument:
-            "Version": "2012-10-17"
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
-                  - s3:GetObject
-                  - s3:PutObject
-                  - s3:ListBucket
-                  - s3:DeleteObject
+                  - "ssm:GetParameters"
+                  - "secretsmanager:GetSecretValue"
                 Resource:
-                  - !Sub arn:aws:s3:::webapp-images-${AWS::AccountId}/*
-              - Effect: Allow
-                Action:
-                  - ssmmessages:CreateControlChannel
-                  - ssmmessages:CreateDataChannel
-                  - ssmmessages:OpenControlChannel
-                  - ssmmessages:OpenDataChannel
-                Resource: "*"
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*"
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:*"
       Tags:
         - Key: Name
           Value: !Sub ${AppName}-ECSTaskRole
         - Key: lab
           Value: !Sub "${ProjectTag}"
 
-    AutoScalingRole:
+  AutoScalingRole:
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub ${AppName}ECSAutoScalingRole
@@ -229,57 +221,60 @@ Resources:
         - Key: lab
           Value: !Sub '${ProjectTag}'
 
-  CodeConnectionsActionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Action: sts:AssumeRole
-            Effect: Allow
-            Principal:
-              AWS: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:*
-        Version: "2012-10-17"
-  CodeConnectionsActionDefaultPolicy:
-    Type: AWS::IAM::Policy
-    Properties:
-      PolicyDocument:
-        Statement:
-          - Action: codestar-connections:UseConnection
-            Effect: Allow
-            Resource: !Ref ConnectionArn
-          - Action:
-              - s3:Abort*
-              - s3:DeleteObject*
-              - s3:GetBucket*
-              - s3:GetObject*
-              - s3:List*
-              - s3:PutObject
-              - s3:PutObjectLegalHold
-              - s3:PutObjectRetention
-              - s3:PutObjectTagging
-              - s3:PutObjectVersionTagging
-            Effect: Allow
-            Resource:
-              - !GetAtt CodePipelineArtifactsBucket.Arn
-              - !Join
-                - /
-                - - !GetAtt CodePipelineArtifactsBucket.Arn
-                  - "*"
-          - Action:
-              - s3:PutObjectAcl
-              - s3:PutObjectVersionAcl
-            Effect: Allow
-            Resource: !Join
-              - /
-              - - !GetAtt CodePipelineArtifactsBucket.Arn
-                - "*"
-        Version: "2012-10-17"
-      PolicyName: CodeConnectionsActionDefaultPolicy
-      Roles:
-        - !Ref CodeConnectionsActionRole  
+  # CodeConnectionsActionRole:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     AssumeRolePolicyDocument:
+  #       Statement:
+  #         - Action: sts:AssumeRole
+  #           Effect: Allow
+  #           Principal:
+  #             AWS: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:*
+  #       Version: "2012-10-17"
+  
+  # CodeConnectionsActionDefaultPolicy:
+  #   Type: AWS::IAM::Policy
+  #   Properties:
+  #     PolicyDocument:
+  #       Statement:
+  #         - Action: codestar-connections:UseConnection
+  #           Effect: Allow
+  #           Resource: !Ref ConnectionArn
+  #         - Action:
+  #             - s3:Abort*
+  #             - s3:DeleteObject*
+  #             - s3:GetBucket*
+  #             - s3:GetObject*
+  #             - s3:List*
+  #             - s3:PutObject
+  #             - s3:PutObjectLegalHold
+  #             - s3:PutObjectRetention
+  #             - s3:PutObjectTagging
+  #             - s3:PutObjectVersionTagging
+  #           Effect: Allow
+  #           Resource:
+  #             - !Sub ${PipelineArtifactBucketArn}
+  #             - !Sub ${PipelineArtifactBucketArn}/*
+  #         - Action:
+  #             - s3:PutObjectAcl
+  #             - s3:PutObjectVersionAcl
+  #           Effect: Allow
+  #           Resource: 
+  #             - !Sub ${PipelineArtifactBucketArn}
+  #             - !Sub ${PipelineArtifactBucketArn}/*
+  #       Version: "2012-10-17"
+  #     PolicyName: CodeConnectionsActionDefaultPolicy
+  #     Roles:
+  #       - !Ref CodeConnectionsActionRole  
 
 
 Outputs:
-  EventRoleArn: { Value: !GetAtt EventRole.Arn }
+  EventBridgeRoleArn: { Value: !GetAtt EventBridgeRole.Arn }
   ECSTaskRoleArn: { Value: !GetAtt ECSTaskRole.Arn }
   ECSTaskExecutionRoleArn: { Value: !GetAtt ECSTaskExecutionRole.Arn }
+  # CodeConnectionsActionRoleArn: { Value: !GetAtt CodeConnectionsActionRole.Arn }
+  CodePipelineRoleArn: { Value: !GetAtt CodePipelineRole.Arn }
+  # DeployCodePipelineRoleArn: { Value: !GetAtt DeployCodePipelineRole.Arn }
+  CodeBuildRoleArn: { Value: !GetAtt CodeBuildRole.Arn }
+  AutoScalingRoleArn: { Value: !GetAtt AutoScalingRole.Arn }
+  CodeDeployRoleArn: { Value: !GetAtt CodeDeployRole.Arn }
