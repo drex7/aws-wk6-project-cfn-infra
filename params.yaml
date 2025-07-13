@@ -1,0 +1,13 @@
+template-file-path: packaged-main-stack.yaml
+parameters:
+  VpcCidr: 10.0.0.0/16
+  PublicSubnetCidrs: 10.0.1.0/24 ,10.0.2.0/24
+  PrivateSubnetCidrs: 10.0.3.0/24 ,10.0.4.0/24
+  ProjectTag: week6-lab1
+  ECSServiceName: GalleryAppv2Service
+  ECRRepoName: gallery-app-v2-ecr-repo
+  AppName: GalleryApp-v2
+  ECRImageTag: tatest
+  FullRepositoryId: drex7/aws-wk6-project-app
+  BranchName: main
+tags: {}
