@@ -1,0 +1,262 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Top-level stack template that deploys a complete CI/CD pipeline with
+  ECR, ECS, CodeBuild, VPC components and RDS.
+Parameters:
+  VpcCidr:
+    Type: String
+    Default: 10.0.0.0/16
+  PublicSubnetCidrs:
+    Type: CommaDelimitedList
+  PrivateSubnetCidrs:
+    Type: CommaDelimitedList
+  AppName:
+    Type: String
+  ProjectTag:
+    Type: String
+    Default: week6-lab1
+  ECRRepoName:
+    Type: String
+    Default: gallery-app-v2-ecr-repo
+  ECRImageTag:
+    Type: String
+    Default: latest
+  ECSServiceName:
+    Type: String
+    Default: GalleryXPAppService
+  FullRepositoryId:
+    Type: String
+    Default: drex7/aws-wk6-project-app
+  BranchName:
+    Type: String
+    Default: main
+  ContainerPort:
+    Type: String
+    Default: 3000
+Resources:
+  NetworkingStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/week6-cfn-template-bucket-854/dfa336cb33e5585a396ba76f3ffc1835.template
+      Parameters:
+        AppName:
+          Ref: AppName
+        VpcCidr:
+          Ref: VpcCidr
+        PublicSubnetCidrs:
+          Fn::Join:
+          - ','
+          - Ref: PublicSubnetCidrs
+        PrivateSubnetCidrs:
+          Fn::Join:
+          - ','
+          - Ref: PrivateSubnetCidrs
+        ProjectTag:
+          Ref: ProjectTag
+  RDSStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/week6-cfn-template-bucket-854/a69f47ee518b147bc6c0a789a0771504.template
+      Parameters:
+        VpcId:
+          Fn::GetAtt:
+          - NetworkingStack
+          - Outputs.VpcId
+        PrivateSubnetIds:
+          Fn::GetAtt:
+          - NetworkingStack
+          - Outputs.PrivateSubnetIds
+        DBSecurityGroup:
+          Fn::GetAtt:
+          - NetworkingStack
+          - Outputs.DBSecurityGroup
+        AppName:
+          Ref: AppName
+  IAMStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/week6-cfn-template-bucket-854/53366595f205670df8b3a8c15abbc3b8.template
+      Parameters:
+        AppName:
+          Ref: AppName
+        ProjectTag:
+          Ref: ProjectTag
+        ECRRepoName:
+          Ref: ECRRepoName
+  S3Stack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+    - NetworkingStack
+    - IAMStack
+    Properties:
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/week6-cfn-template-bucket-854/36483a3a999b940956b625093555ba8b.template
+      Parameters:
+        AppName:
+          Ref: AppName
+        ALBDnsName:
+          Fn::GetAtt:
+          - NetworkingStack
+          - Outputs.ALBDnsName
+        ECSTaskRoleArn:
+          Fn::GetAtt:
+          - IAMStack
+          - Outputs.ECSTaskRoleArn
+        CodeBuildRoleArn:
+          Fn::GetAtt:
+          - IAMStack
+          - Outputs.CodeBuildRoleArn
+        CodeDeployRoleArn:
+          Fn::GetAtt:
+          - IAMStack
+          - Outputs.CodeDeployRoleArn
+        CodePipelineRoleArn:
+          Fn::GetAtt:
+          - IAMStack
+          - Outputs.CodePipelineRoleArn
+        EventBridgeRoleArn:
+          Fn::GetAtt:
+          - IAMStack
+          - Outputs.EventBridgeRoleArn
+  ECSStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+    - NetworkingStack
+    - RDSStack
+    - IAMStack
+    - S3Stack
+    Properties:
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/week6-cfn-template-bucket-854/507d88970e2a664719eb4ecccef029de.template
+      Parameters:
+        ALBSecurityGroup:
+          Fn::GetAtt:
+          - NetworkingStack
+          - Outputs.ALBSecurityGroup
+        AppImageBucket:
+          Fn::GetAtt:
+          - S3Stack
+          - Outputs.AppImageBucket
+        AppName:
+          Ref: AppName
+        ContainerPort:
+          Ref: ContainerPort
+        ContainerSecurityGroup:
+          Fn::GetAtt:
+          - NetworkingStack
+          - Outputs.ContainerSecurityGroup
+        DBEndpoint:
+          Fn::GetAtt:
+          - RDSStack
+          - Outputs.DBEndpoint
+        ECRImageTag:
+          Ref: ECRImageTag
+        ECRRepoName:
+          Ref: ECRRepoName
+        ECSServiceName:
+          Ref: ECSServiceName
+        ECSTaskExecutionRoleArn:
+          Fn::GetAtt:
+          - IAMStack
+          - Outputs.ECSTaskExecutionRoleArn
+        ECSTaskRoleArn:
+          Fn::GetAtt:
+          - IAMStack
+          - Outputs.ECSTaskRoleArn
+        ProjectTag:
+          Ref: ProjectTag
+        PrivateSubnetIds:
+          Fn::GetAtt:
+          - NetworkingStack
+          - Outputs.PrivateSubnetIds
+        PublicSubnetIds:
+          Fn::GetAtt:
+          - NetworkingStack
+          - Outputs.PublicSubnetIds
+        VpcId:
+          Fn::GetAtt:
+          - NetworkingStack
+          - Outputs.VpcId
+  CICDStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/week6-cfn-template-bucket-854/2a8fab41a47a2327a3be75988269039e.template
+      Parameters:
+        AppName:
+          Ref: AppName
+        CodeDeployRoleArn:
+          Fn::GetAtt:
+          - IAMStack
+          - Outputs.CodeDeployRoleArn
+        CodeBuildRoleArn:
+          Fn::GetAtt:
+          - IAMStack
+          - Outputs.CodeBuildRoleArn
+        CodeConnectionsActionRoleArn:
+          Fn::GetAtt:
+          - IAMStack
+          - Outputs.CodeConnectionsActionRoleArn
+        ECRRepoName:
+          Fn::GetAtt:
+          - ECSStack
+          - Outputs.ECRRepoName
+        ContainerName:
+          Fn::GetAtt:
+          - ECSStack
+          - Outputs.ContainerName
+        ContainerPort:
+          Ref: ContainerPort
+        ECRRepoArn:
+          Fn::GetAtt:
+          - ECSStack
+          - Outputs.ECRRepoArn
+        ECSAppName:
+          Fn::GetAtt:
+          - ECSStack
+          - Outputs.ECSAppName
+        ECSClusterName:
+          Fn::GetAtt:
+          - ECSStack
+          - Outputs.ECSClusterName
+        ECSServiceName:
+          Fn::GetAtt:
+          - ECSStack
+          - Outputs.ECSServiceName
+        EventBridgeRoleArn:
+          Fn::GetAtt:
+          - IAMStack
+          - Outputs.EventBridgeRoleArn
+        FullRepositoryId:
+          Ref: FullRepositoryId
+        GitHubBranch:
+          Ref: BranchName
+        GreenTargetGroupName:
+          Fn::GetAtt:
+          - ECSStack
+          - Outputs.GreenTargetGroupName
+        PipelineArtifactBucketName:
+          Fn::GetAtt:
+          - S3Stack
+          - Outputs.PipelineArtifactBucketName
+        S3BucketArn:
+          Fn::GetAtt:
+          - S3Stack
+          - Outputs.S3BucketArn
+Outputs:
+  LoadBalancerDNS:
+    Value:
+      Fn::GetAtt:
+      - ECSStack
+      - Outputs.ALBDnsName
+  S3BucketName:
+    Value:
+      Fn::GetAtt:
+      - S3Stack
+      - Outputs.S3BucketName
+  RDSSecretArn:
+    Value:
+      Fn::GetAtt:
+      - RDSStack
+      - Outputs.DBSecretArn
+  ECRRepoURI:
+    Value:
+      Fn::GetAtt:
+      - ECSStack
+      - Outputs.ECRRepoURI
