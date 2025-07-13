@@ -173,6 +173,7 @@ Resources:
                 aws:SourceArn: !Sub "arn:aws:ecs:eu-central-1:${AWS::AccountId}:*"
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - arn:aws:iam::aws:policy/AmazonRDSReadOnlyAccess
       Policies:
         - PolicyName: AccessSecretsPolicy
           PolicyDocument:
