@@ -31,7 +31,7 @@ Resources:
   RDSStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: /path_to_template/rds-template.yaml
+      TemplateURL: ./templates/rds-template.yaml
       Parameters:
         VpcId: !GetAtt NetworkingStack.Outputs.VpcId
         PrivateSubnetIds: !GetAtt NetworkingStack.Outputs.PrivateSubnetIds
