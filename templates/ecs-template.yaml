@@ -73,7 +73,7 @@ Resources:
             - Name: DB_HOST
               Value: !Ref DBEndpoint
             - Name: DATABASE_URL
-              Value: !Sub 'postgresql://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}:5432/${DB_NAME}?schema=public'
+              Value: 'postgresql://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}:5432/${DB_NAME}?schema=public'
           HealthCheck:
             Command:
               - CMD-SHELL

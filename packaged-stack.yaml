@@ -124,7 +124,7 @@ Resources:
     - IAMStack
     - S3Stack
     Properties:
-      TemplateURL: https://s3.eu-central-1.amazonaws.com/week6-cfn-template-bucket-854/templates/507d88970e2a664719eb4ecccef029de.template
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/week6-cfn-template-bucket-854/templates/6760b18b690fcc13656e1b67ed8cb836.template
       Parameters:
         ALBSecurityGroup:
           Fn::GetAtt:
@@ -177,7 +177,7 @@ Resources:
   CICDStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.eu-central-1.amazonaws.com/week6-cfn-template-bucket-854/templates/2a8fab41a47a2327a3be75988269039e.template
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/week6-cfn-template-bucket-854/templates/1693e2fc689851dd86b4e5a6bbeb32ea.template
       Parameters:
         AppName:
           Ref: AppName

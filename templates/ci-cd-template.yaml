@@ -37,7 +37,6 @@ Resources:
           result: [ "SUCCESS" ]
       Targets:
         - Arn: !Ref BlueGreenDeploymentPipeline
-          Id: StartPipelineExecution
           RoleArn: !Ref EventBridgeRoleArn
           Id: DeployPipelineTarget
           InputTransformer:
@@ -229,10 +228,10 @@ Resources:
             Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECRRepoName}"
       Source:
         Type: GITHUB
+        Location: https://github.com/drex7/aws-wk6-project-cfn-infra
+        GitCloneDepth: 1
         Auth:
           Type: OAUTH
-          Location: https://github.com/drex7/aws-wk6-project-cfn-infra
-          GitCloneDepth: 1
       Cache:
         Type: NO_CACHE
 
