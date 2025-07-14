@@ -5,20 +5,13 @@ Parameters:
   ALBListenerArn: { Type: String }
   AppName: { Type: String }
   BlueTargetGroupName: { Type: String }
-  BranchName: { Type: String }
   CodeBuildRoleArn: { Type: String }
-  CodeDeployRoleArn: { Type: String }
   # CodeConnectionsActionRoleArn: { Type: String }
   CodePipelineRoleArn: { Type: String }
-  ContainerName: { Type: String }
-  ContainerPort: { Type: Number }
   ECRRepoArn: { Type: String }
-  ECRRepoName: { Type: String }
-  ECSAppName: { Type: String }
   ECSClusterName: { Type: String }
   ECSServiceName: { Type: String }
   EventBridgeRoleArn: { Type: String }
-  FullRepositoryId: { Type: String }
   GreenTargetGroupName: { Type: String }
   PipelineArtifactBucketName: { Type: String }
   ProjectTag: { Type: String }
@@ -40,25 +33,11 @@ Resources:
         - Arn: !Ref BlueGreenDeploymentPipeline
           RoleArn: !Ref EventBridgeRoleArn
           Id: DeployPipelineTarget
-          InputTransformer:
-            InputPathsMap:
-              image-tag: $.detail.image-tag
-              repository-name: $.detail.repository-name
-            InputTemplate: |
-              {
-                "source": [
-                  {
-                    "s3": {
-                      "bucket": "<Bucket>",
-                      "key": "artifacts/<repository-name>/<image-tag>/imagedefinitions.json"
-                    }
-                  }
-                ]
-              }
-            InputTemplateParameters:
-              Bucket: !Ref PipelineArtifactBucketName
-              # RepoName: !Ref ECRRepository
-              # ImageTag: <imageTag>
+      Tags:
+        - Key: Project
+          Value: !Sub ${AppName}-eventbridge
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
 
   # CodeDeploy Application and Deployment Group for Blue/Green deployment
   CodeDeployApp:
