@@ -56,7 +56,7 @@ Resources:
       TemplateURL: !Sub ${TemplatesURL}/s3-template.yaml
       Parameters:
         AppName: !Ref AppName
-        ALBDnsName: !GetAtt NetworkingStack.Outputs.ALBDnsName
+        ALBDnsName: !GetAtt ECSStack.Outputs.ALBDnsName
         ECSTaskRoleArn: !GetAtt IAMStack.Outputs.ECSTaskRoleArn
         CodeDeployRoleArn: !GetAtt IAMStack.Outputs.CodeDeployRoleArn
         CodePipelineRoleArn: !GetAtt IAMStack.Outputs.CodePipelineRoleArn
@@ -70,7 +70,6 @@ Resources:
       TemplateURL: !Sub ${TemplatesURL}/ecs-template.yaml
       Parameters:
         ALBSecurityGroup: !GetAtt NetworkingStack.Outputs.ALBSecurityGroup
-        AppImageBucket: !GetAtt S3Stack.Outputs.AppImageBucket
         AppName: !Ref AppName
         ContainerPort: !Ref ContainerPort
         ContainerSecurityGroup: !GetAtt NetworkingStack.Outputs.ContainerSecurityGroup

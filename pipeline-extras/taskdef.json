@@ -37,7 +37,7 @@
 			"environment": [
 				{
 					"name": "NUXT_AWS_S3_BUCKET",
-					"value": "webapp-images-985539763589"
+					"value": "webapp-images-v2-985539763589"
 				},
 				{
 					"name": "DATABASE_URL1",

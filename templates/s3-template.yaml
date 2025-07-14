@@ -14,7 +14,7 @@ Resources:
   AppImagesBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub webapp-images-${AWS::AccountId}
+      BucketName: !Sub webapp-images-v2-${AWS::AccountId}
       CorsConfiguration:
         CorsRules:
           - AllowedHeaders: ['*']
@@ -23,11 +23,6 @@ Resources:
               - !Join ['', ['http://', !Ref ALBDnsName]]
               - 'http://localhost:3000'
             MaxAge: 3000
-      # PublicAccessBlockConfiguration:
-      #   BlockPublicAcls: false
-      #   BlockPublicPolicy: false
-      #   IgnorePublicAcls: false
-      #   RestrictPublicBuckets: false
 
   AppImagesBucketPolicy:
     Type: AWS::S3::BucketPolicy
