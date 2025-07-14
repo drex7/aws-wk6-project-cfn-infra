@@ -1,4 +1,4 @@
-template-file-path: main-template.yaml
+template-file-path: templates/main-template.yaml
 parameters:
   AppName: 'GalleryApp-v2'
   ContainerPort: 3000
