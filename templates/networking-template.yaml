@@ -294,7 +294,7 @@ Resources:
     Properties:
       ServiceName: !Sub com.amazonaws.${AWS::Region}.secretsmanager
       VpcEndpointType: Interface
-      Vp: !Ref MyVPC
+      VpcId: !Ref MyVPC
       SecurityGroupIds: [!Ref VPCEndpointSecurityGroup]
       SubnetIds: [!Ref PrivateSubnet1, !Ref PrivateSubnet2]
       PrivateDnsEnabled: true
@@ -325,6 +325,5 @@ Outputs:
     Value: !Join [",", [!Ref PublicSubnet1, !Ref PublicSubnet2]]
   PrivateSubnetIds:
     Value: !Join [",", [!Ref PrivateSubnet1, !Ref PrivateSubnet2]]
-  PrivateRouteTableId: { Value: !Ref PrivateRouteTable }
   DBSecurityGroup: { Value: !Ref DBSecurityGroup }
   ALBSecurityGroup: { Value: !Ref ALBSecurityGroup }
