@@ -94,7 +94,7 @@ Resources:
         AppName: !Ref AppName
         BlueTargetGroupName: !GetAtt ECSStack.Outputs.BlueTargetGroupName
         CodeDeployRoleArn: !GetAtt IAMStack.Outputs.CodeDeployRoleArn 
-        ECRRepoArn: !GetAtt ECSStack.Outputs.ECRRepoArn
+        ECRRepoName: !Ref ECRRepoName
         ECSClusterName: !GetAtt ECSStack.Outputs.ECSClusterName
         ECSServiceName: !GetAtt ECSStack.Outputs.ECSServiceName
         EventBridgeRoleArn: !GetAtt IAMStack.Outputs.EventBridgeRoleArn

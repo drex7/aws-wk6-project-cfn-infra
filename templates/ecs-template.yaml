@@ -24,12 +24,6 @@ Resources:
       LogGroupName: !Sub /ecs/${AppName}
       RetentionInDays: 7
 
-  ECRRepository:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: !Ref ECRRepoName
-      ImageTagMutability: MUTABLE
-
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
@@ -121,7 +115,7 @@ Resources:
             - !Ref ContainerSecurityGroup
           AssignPublicIp: DISABLED
       LoadBalancers:
-        - ContainerName: !Sub "${AppName}Container"
+        - ContainerName: !Sub "${AppName}-Container"
           ContainerPort: !Ref ContainerPort
           LoadBalancerName: !Ref AWS::NoValue
           TargetGroupArn: !Ref BlueTargetGroup
@@ -193,9 +187,6 @@ Outputs:
   GreenTargetGroupName: { Value: !GetAtt GreenTargetGroup.TargetGroupName }
   BlueTargetGroupName: { Value: !GetAtt BlueTargetGroup.TargetGroupName }
   ALBListenerArn: { Value: !Ref Listener }
-  ECRRepoName: { Value: !Ref ECRRepository }
-  ContainerName: { Value: !Sub "${AppName}Container" }
+  ContainerName: { Value: !Sub "${AppName}-Container" }
   ECSClusterName: { Value: !Ref ECSCluster }
   ECSServiceName: { Value: !GetAtt ECSService.Name }
-  ECRRepoArn: { Value: !GetAtt ECRRepository.Arn }
-  ECSAppName: { Value: !Sub "${AppName}ECSApp" }
