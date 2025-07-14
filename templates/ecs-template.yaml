@@ -194,9 +194,9 @@ Outputs:
   GreenTargetGroupName: { Value: !GetAtt GreenTargetGroup.TargetGroupName }
   BlueTargetGroupName: { Value: !GetAtt BlueTargetGroup.TargetGroupName }
   ALBListenerArn: { Value: !Ref Listener }
-  ECRRepoName: { Value: !GetAtt ECRRepository.RepositoryName }
+  ECRRepoName: { Value: !Ref ECRRepository }
   ContainerName: { Value: !Sub "${AppName}Container" }
-  ECSClusterName: { Value: !GetAtt ECSCluster.ClusterName }
-  ECSServiceName: { Value: !GetAtt ECSService.ServiceName }
+  ECSClusterName: { Value: !Ref ECSCluster }
+  ECSServiceName: { Value: !Ref ECSService.Name }
   ECRRepoArn: { Value: !GetAtt ECRRepository.Arn }
   ECSAppName: { Value: !Sub "${AppName}ECSApp" }

@@ -99,8 +99,8 @@ Resources:
       TemplateURL: !Sub ${TemplatesURL}/ci-cd-template.yaml
       Parameters:
         AppName: !Ref AppName
-        BlueTargetGroupName: !GetAtt EC SStack.Outputs.BlueTargetGroupName
-        CodeBuildRoleArn: !GetAtt IAMStack.Outputs.CodeBuildRoleArn 
+        BlueTargetGroupName: !GetAtt ECSStack.Outputs.BlueTargetGroupName
+        CodeDeployRoleArn: !GetAtt IAMStack.Outputs.CodeDeployRoleArn 
         ECRRepoArn: !GetAtt ECSStack.Outputs.ECRRepoArn
         ECSClusterName: !GetAtt ECSStack.Outputs.ECSClusterName
         ECSServiceName: !GetAtt ECSStack.Outputs.ECSServiceName

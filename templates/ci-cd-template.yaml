@@ -5,8 +5,7 @@ Parameters:
   ALBListenerArn: { Type: String }
   AppName: { Type: String }
   BlueTargetGroupName: { Type: String }
-  CodeBuildRoleArn: { Type: String }
-  # CodeConnectionsActionRoleArn: { Type: String }
+  CodeDeployRoleArn: { Type: String }
   CodePipelineRoleArn: { Type: String }
   ECRRepoArn: { Type: String }
   ECSClusterName: { Type: String }
@@ -33,11 +32,6 @@ Resources:
         - Arn: !Ref BlueGreenDeploymentPipeline
           RoleArn: !Ref EventBridgeRoleArn
           Id: DeployPipelineTarget
-      Tags:
-        - Key: Project
-          Value: !Sub ${AppName}-eventbridge
-        - Key: lab
-          Value: !Sub "${ProjectTag}"
 
   # CodeDeploy Application and Deployment Group for Blue/Green deployment
   CodeDeployApp:

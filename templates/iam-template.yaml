@@ -71,45 +71,7 @@ Resources:
                   - codeconnections:UseConnection
                 Resource:
                   - !Sub arn:aws:codeconnections:${AWS::Region}:${AWS::AccountId}:connection/*
-
-  # IAM Role for CodeBuild
-  CodeBuildRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub ${AppName}-CodeBuildRole
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal: { Service: codebuild.amazonaws.com }
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: CodeBuildPolicy
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - codebuild:*
-                Resource: "*"
-              - Effect: Allow
-                Action:
-                  - logs:CreateLogGroup
-                  - logs:CreateLogStream
-                  - logs:PutLogEvents
-                Resource: 
-                  - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*'
-              - Effect: Allow
-                Action:
-                  - ecr:GetAuthorizationToken
-                  - ecr:BatchCheckLayerAvailability
-                  - ecr:GetDownloadUrlForLayer
-                  - ecr:BatchGetImage
-                  - ecr:PutImage
-                  - ecr:UploadLayerPart
-                Resource: 
-                  - !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/${ECRRepoName}
-              
+            
   CodeDeployRole:
     Type: AWS::IAM::Role
     Properties:
@@ -277,7 +239,5 @@ Outputs:
   ECSTaskExecutionRoleArn: { Value: !GetAtt ECSTaskExecutionRole.Arn }
   # CodeConnectionsActionRoleArn: { Value: !GetAtt CodeConnectionsActionRole.Arn }
   CodePipelineRoleArn: { Value: !GetAtt CodePipelineRole.Arn }
-  # DeployCodePipelineRoleArn: { Value: !GetAtt DeployCodePipelineRole.Arn }
-  CodeBuildRoleArn: { Value: !GetAtt CodeBuildRole.Arn }
   AutoScalingRoleArn: { Value: !GetAtt AutoScalingRole.Arn }
   CodeDeployRoleArn: { Value: !GetAtt CodeDeployRole.Arn }
