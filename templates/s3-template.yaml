@@ -53,7 +53,7 @@ Resources:
   PipelineArtifactBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub artifacts-gallery-app-v2-bucket-${AWS::AccountId}
+      BucketName: !Sub 'artifacts-gallery-app-v2-bucket-${AWS::AccountId}'
       VersioningConfiguration:
         Status: Enabled
 
