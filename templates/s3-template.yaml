@@ -24,7 +24,6 @@ Resources:
               - !Join ['', ['http://', !Ref ALBDnsName]]
               - 'http://localhost:3000'
             MaxAge: 3000
-      AccessControl: Private
       # PublicAccessBlockConfiguration:
       #   BlockPublicAcls: false
       #   BlockPublicPolicy: false
@@ -61,7 +60,6 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub codepipeline-artifacts-${AppName}-${AWS::AccountId}
-      AccessControl: Private
       VersioningConfiguration:
         Status: Enabled
 

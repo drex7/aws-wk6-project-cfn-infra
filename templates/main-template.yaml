@@ -14,8 +14,6 @@ Parameters:
   ECRRepoName: { Type: String, Default: gallery-app-v2-ecr-repo }
   ECRImageTag: { Type: String, Default: latest }
   ECSServiceName: { Type: String, Default: GalleryApp-v2-Service }
-  FullRepositoryId: { Type: String, Default: drex7/aws-wk6-project-app }
-  BranchName: { Type: String, Default: main }
   ContainerPort: { Type: String, Default: 3000 }
   TemplatesURL: { Type: String, Default: 'https://week6-cfn-template-bucket-854.s3.eu-central-1.amazonaws.com/templates' }
   
@@ -38,7 +36,6 @@ Resources:
     Properties:
       TemplateURL: !Sub ${TemplatesURL}/rds-template.yaml
       Parameters:
-        VpcId: !GetAtt NetworkingStack.Outputs.VpcId
         PrivateSubnetIds: !GetAtt NetworkingStack.Outputs.PrivateSubnetIds
         DBSecurityGroup: !GetAtt NetworkingStack.Outputs.DBSecurityGroup
         AppName: !Ref AppName

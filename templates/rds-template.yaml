@@ -2,7 +2,6 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: "Stack template for PostGreSQL Database infrastructure"
 
 Parameters:
-  VpcId: { Type: String }
   PrivateSubnetIds: { Type: CommaDelimitedList }
   DBSecurityGroup: { Type: String }
   AppName: { Type: String }
