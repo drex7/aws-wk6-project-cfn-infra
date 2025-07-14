@@ -39,26 +39,7 @@ Resources:
         - Arn: !Ref BlueGreenDeploymentPipeline
           RoleArn: !Ref EventBridgeRoleArn
           Id: DeployPipelineTarget
-          InputTransformer:
-            InputPathsMap:
-              image-tag: $.detail.image-tag
-              repository-name: $.detail.repository-name
-            InputTemplate: |
-              {
-                "source": [
-                  {
-                    "s3": {
-                      "bucket": "<Bucket>",
-                      "key": "artifacts/<repository-name>/<image-tag>/imagedefinitions.json"
-                    }
-                  }
-                ]
-              }
-            InputTemplateParameters:
-              Bucket: !Ref PipelineArtifactBucketName
-              # RepoName: !Ref ECRRepository
-              # ImageTag: <imageTag>
-
+          
   # CodeDeploy Application and Deployment Group for Blue/Green deployment
   CodeDeployApp:
     Type: AWS::CodeDeploy::Application
