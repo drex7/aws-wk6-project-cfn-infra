@@ -2,24 +2,29 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: Top-level stack template that deploys a complete CI/CD pipeline with ECR, ECS, CodeBuild, VPC components and RDS.
 
 Parameters:
-  VpcCidr: { Type: String }
-  PublicSubnetCidrs: { Type: CommaDelimitedList }
-  PrivateSubnetCidrs: { Type: CommaDelimitedList }
-  AppName: { Type: String}
+  AppName: { Type: String, Default: GalleryApp-v2 }
+  PublicSubnetCidrs: 
+    Type: CommaDelimitedList
+    Default: 10.0.1.0/24, 10.0.2.0/24
+  PrivateSubnetCidrs: 
+    Type: CommaDelimitedList
+    Default: 10.0.3.0/24, 10.0.4.0/24
   VpcCidr: { Type: String, Default: 10.0.0.0/16 }
   ProjectTag: { Type: String, Default: "week6-lab1" }
   ECRRepoName: { Type: String, Default: gallery-app-v2-ecr-repo }
   ECRImageTag: { Type: String, Default: latest }
-  ECSServiceName: { Type: String, Default: GalleryXPAppService }
+  ECSServiceName: { Type: String, Default: GalleryApp-v2-Service }
   FullRepositoryId: { Type: String, Default: drex7/aws-wk6-project-app }
   BranchName: { Type: String, Default: main }
   ContainerPort: { Type: String, Default: 3000 }
+  TemplatesURL: { Type: String, Default: 'https://week6-cfn-template-bucket-854.s3.eu-central-1.amazonaws.com/templates' }
+  
 
 Resources:
   NetworkingStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: ./templates/networking-template.yaml
+      TemplateURL: !Sub ${TemplatesURL}/networking-template.yaml
       Parameters:
         AppName: !Ref AppName
         VpcCidr: !Ref VpcCidr
@@ -31,7 +36,7 @@ Resources:
   RDSStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: ./templates/rds-template.yaml
+      TemplateURL: !Sub ${TemplatesURL}/rds-template.yaml
       Parameters:
         VpcId: !GetAtt NetworkingStack.Outputs.VpcId
         PrivateSubnetIds: !GetAtt NetworkingStack.Outputs.PrivateSubnetIds
@@ -42,7 +47,7 @@ Resources:
   IAMStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: ./templates/iam-template.yaml
+      TemplateURL: !Sub ${TemplatesURL}/iam-template.yaml
       Parameters:
         AppName: !Ref AppName
         ProjectTag: !Ref ProjectTag
@@ -52,7 +57,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: [NetworkingStack, IAMStack]
     Properties:
-      TemplateURL: ./templates/s3-template.yaml
+      TemplateURL: !Sub ${TemplatesURL}/s3-template.yaml
       Parameters:
         AppName: !Ref AppName
         ALBDnsName: !GetAtt NetworkingStack.Outputs.ALBDnsName
@@ -68,7 +73,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: [NetworkingStack, RDSStack, IAMStack, S3Stack]
     Properties:
-      TemplateURL: ./templates/ecs-template.yaml
+      TemplateURL: !Sub ${TemplatesURL}/ecs-template.yaml
       Parameters:
         ALBSecurityGroup: !GetAtt NetworkingStack.Outputs.ALBSecurityGroup
         AppImageBucket: !GetAtt S3Stack.Outputs.AppImageBucket
@@ -91,7 +96,7 @@ Resources:
   CICDStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: ./templates/ci-cd-template.yaml
+      TemplateURL: !Sub ${TemplatesURL}/ci-cd-template.yaml
       Parameters:
         AppName: !Ref AppName
         CodeDeployRoleArn: !GetAtt IAMStack.Outputs.CodeDeployRoleArn
@@ -116,7 +121,7 @@ Resources:
   #   Type: AWS::CloudFormation::Stack
   #   DependsOn: ECSStack
   #   Properties:
-  #     TemplateURL: ./templates/codedeploy-template.yaml
+  #     TemplateURL: !Sub ${TemplatesURL}/codedeploy-template.yaml
   #     Parameters:
   #       AppName: !Ref AppName
   #       ECSClusterName: !GetAtt ECSStack.Outputs.ECSClusterName
@@ -131,7 +136,7 @@ Resources:
   #   Type: AWS::CloudFormation::Stack
   #   DependsOn: [ECSStack, CodeDeployStack, S3Stack]
   #   Properties:
-  #     TemplateURL: ./templates/codepipeline-template.yaml
+  #     TemplateURL: !Sub ${TemplatesURL}/codepipeline-template.yaml
   #     Parameters:
   #       ECSAppName: !GetAtt ECSStack.Outputs.ECSAppName
   #       ECRRepoName: !GetAtt ECSStack.Outputs.ECRRepoName
@@ -153,7 +158,7 @@ Resources:
   #   Type: AWS::CloudFormation::Stack
   #   DependsOn: [CodePipelineStack, IAMStack, ECSStack]
   #   Properties:
-  #     TemplateURL: ./templates/eventbridge-template.yaml
+  #     TemplateURL: !Sub ${TemplatesURL}/eventbridge-template.yaml
   #     Parameters:
   #       ECRRepoArn: !GetAtt ECSStack.Outputs.ECRRepoArn
   #       PipelineStack: !GetAtt CodePipelineStack.Outputs.BlueGreenDeploymentPipelineArn

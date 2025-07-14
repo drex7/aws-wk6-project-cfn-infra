@@ -22,7 +22,7 @@ Resources:
   CloudWatchLogsGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /ecs/${AppName}-Task
+      LogGroupName: !Sub /ecs/${AppName}
       RetentionInDays: 7
 
   ECRRepository:
@@ -60,6 +60,7 @@ Resources:
               awslogs-group: !Ref CloudWatchLogsGroup
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: ecs
+              awslogs-create-group: "true"
           Secrets:
             - Name: DB_USERNAME
               ValueFrom: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${AppName}/db-credentials:username"
@@ -72,16 +73,18 @@ Resources:
               Value: !Ref AppImageBucket
             - Name: DB_HOST
               Value: !Ref DBEndpoint
-            - Name: DATABASE_URL
+            - Name: DATABASE_URL1
               Value: 'postgresql://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}:5432/${DB_NAME}?schema=public'
+            - Name: DATABASE_URL
+              Value: 'arn:aws:ssm:eu-central-1:985539763589:parameter/GalleryApp-v2/db/url'
           HealthCheck:
             Command:
               - CMD-SHELL
               - curl -f http://localhost:3000/ || exit 1
-            Interval: 30
+            Interval: 10
             Timeout: 5
             Retries: 3
-            StartPeriod: 60
+            StartPeriod: 100
       Tags:
         - Key: Name
           Value: !Sub "${AppName}Task"

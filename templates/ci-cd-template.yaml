@@ -144,53 +144,6 @@ Resources:
               InputArtifacts:
                 - Name: DeployArtifact
 
-  # CodePipeline for ECR deployment using CodeBuild
-  BuildPipeline:
-    Type: AWS::CodePipeline::Pipeline
-    Properties:
-      Name: !Sub ${ECSAppName}-ecr-deploy-pipeline
-      ArtifactStore:
-        Location: !Ref PipelineArtifactBucketName
-        Type: S3
-      ExecutionMode: QUEUED
-      PipelineType: V2
-      RoleArn: !Ref CodePipelineRoleArn
-      Stages:
-        - Name: Source
-          Actions:
-            - Name: CodeConnections
-              ActionTypeId:
-                Category: Source
-                Owner: AWS
-                Provider: CodeStarSourceConnection
-                Version: "1"
-              Configuration:
-                ConnectionArn: !Sub arn:${AWS::Partition}:codeconnections:${AWS::Region}:${AWS::AccountId}:connection/43066aab-299c-45ea-a754-bbc26be2696e
-                FullRepositoryId: !Ref FullRepositoryId
-                BranchName: !Ref BranchName
-              OutputArtifacts:
-                - Name: SourceOutput
-              # RoleArn: !Ref CodeConnectionsActionRoleArn
-              RunOrder: 1
-          OnFailure:
-            Result: RETRY
-        - Name: Build_and_Deploy
-          OnFailure:
-            Result: ROLLBACK
-          Actions:
-            - Name: Docker_Build_Tag_and_Push
-              ActionTypeId:
-                Category: Build
-                Owner: AWS
-                Provider: CodeBuild
-                Version: "1"
-              Configuration:
-                ProjectName: ECRDeployProject
-              InputArtifacts:
-                - Name: SourceOutput
-              RoleArn: !Ref CodeBuildRoleArn
-              RunOrder: 1
-
   # CodeBuild Project to build & deploy image to ECR
   ECRDeployProject:
     Type: AWS::CodeBuild::Project
@@ -238,5 +191,4 @@ Resources:
 
 Outputs:
   BlueGreenDeploymentPipelineArn: { Value: !GetAtt BlueGreenDeploymentPipeline.Arn }
-  ECRDeployCodePipelineArn: { Value: !GetAtt BuildPipeline.Arn }
   ECRDeployProjectArn: { Value: !GetAtt ECRDeployProject.Arn }

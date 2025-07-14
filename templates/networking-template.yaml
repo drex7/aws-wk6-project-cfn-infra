@@ -39,7 +39,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref MyVPC
-      CidrBlock: [0, !Ref PublicSubnetCidrs]
+      CidrBlock: !Select [0, !Ref PublicSubnetCidrs]
       AvailabilityZone: !Select [0, !GetAZs ""]
       MapPublicIpOnLaunch: true
       Tags:
@@ -52,7 +52,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref MyVPC
-      CidrBlock: [1, !Ref PublicSubnetCidrs]
+      CidrBlock: !Select [1, !Ref PublicSubnetCidrs]
       AvailabilityZone: !Select [1, !GetAZs ""]
       MapPublicIpOnLaunch: true
       Tags:
@@ -65,7 +65,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref MyVPC
-      CidrBlock: [0, !Ref PrivateSubnetCidrs]
+      CidrBlock: !Select [0, !Ref PrivateSubnetCidrs]
       AvailabilityZone: !Select [0, !GetAZs ""]
       Tags:
         - Key: Name
@@ -113,30 +113,6 @@ Resources:
       RouteTableId: !Ref PublicRouteTable
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref InternetGateway
-
-  # NAT Gateway
-  # NatGatewayEIP:
-  #   Type: AWS::EC2::EIP
-  #   Properties:
-  #     Domain: vpc
-
-  # NatGateway:
-  #   Type: AWS::EC2::NatGateway
-  #   Properties:
-  #     AllocationId: !GetAtt NatGatewayEIP.AllocationId
-  #     SubnetId: !Ref PublicSubnet1
-  #     Tags:
-  #       - Key: Name
-  #         Value: MyVPC-NAT
-  #       - Key: lab
-  #         Value: !Sub "${ProjectTag}"
-
-  PrivateRoute:
-    Type: AWS::EC2::Route
-    Properties:
-      RouteTableId: !Ref PrivateRouteTable
-      DestinationCidrBlock: 0.0.0.0/0
-      # NatGatewayId: !Ref NatGateway
 
   # Route Table Associations
   PublicSubnet1RouteTableAssociation:
@@ -194,8 +170,10 @@ Resources:
           ToPort: 80
           CidrIp: 0.0.0.0/0
       SecurityGroupEgress:
-        - IpProtocol: "tcp"
-          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          CidrIp: !Ref VpcCidr
       Tags:
         - Key: Name
           Value: ALBSecurityGroup

@@ -1,0 +1,72 @@
+{
+	"executionRoleArn": "gallery-app-v2-ECSTaskExecutionRole",
+	"taskRoleArn": "gallery-app-v2-ECSTaskRole",
+	"networkMode": "awsvpc",
+	"cpu": "256",
+	"memory": "512",
+	"family": "GalleryApp-v2-task-def",
+	"requiresCompatibilities": [
+		"FARGATE"
+	],
+	"containerDefinitions": [
+		{
+			"name": "GalleryApp-v2-Container",
+			"image": "<IMAGE1_NAME>",
+			"essential": true,
+			"portMappings": [
+				{
+					"hostPort": 3000,
+					"protocol": "tcp",
+					"containerPort": 3000
+				}
+			],
+			"secrets": [
+				{
+					"name": "DB_USERNAME",
+					"valueFrom": "arn:aws:secretsmanager:eu-central-1:123456789012:secret:GalleryApp-v2/db-credentials:username"
+				},
+				{
+					"name": "DB_PASSWORD",
+					"valueFrom": "arn:aws:secretsmanager:eu-central-1:123456789012:secret:GalleryApp-v2/db-credentials:password"
+				},
+				{
+					"name": "DB_NAME",
+					"valueFrom": "arn:aws:secretsmanager:eu-central-1:123456789012:secret:GalleryApp-v2/db-credentials:database_name"
+				}
+			],
+			"environment": [
+				{
+					"name": "NUXT_AWS_S3_BUCKET",
+					"value": "webapp-images-985539763589"
+				},
+				{
+					"name": "DATABASE_URL1",
+					"valueFrom": "postgresql://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?schema=public"
+				},
+				{
+					"name": "DATABASE_URL",
+					"valueFrom": "arn:aws:ssm:eu-central-1:985539763589:parameter/GalleryApp-v2/db/url"
+				}
+			]
+		}
+	],
+	"logConfiguration": {
+		"logDriver": "awslogs",
+		"options": {
+			"awslogs-group": "/ecs/GalleryApp-v2",
+			"awslogs-region": "eu-central-1",
+			"awslogs-create-group": "true",
+			"awslogs-stream-prefix": "ecs"
+		}
+	},
+	"healthCheck": {
+		"command": [
+			"CMD-SHELL",
+			"curl -f http://localhost:8081/actuator/health || exit 1"
+		],
+		"interval": 10,
+		"timeout": 5,
+		"retries": 3,
+		"startPeriod": 100
+	}
+}

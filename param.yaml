@@ -7,11 +7,11 @@ parameters:
   PrivateSubnetCidrs: 
     - '10.0.3.0/24'
     - '10.0.4.0/24'
-  ProjectTag: week6-lab1
-  ECSServiceName: GalleryXPAppService
-  ECRRepoName: gallery-app-v2-ecr-repo
-  AppName: GalleryApp-v2
-  ECRImageTag: latest
+  ProjectTag: 'week6-lab1'
+  ECSServiceName: 'GalleryApp-v2-Service'
+  ECRRepoName: 'gallery-app-v2-ecr-repo'
+  AppName: 'GalleryApp-v2'
+  ECRImageTag: 'latest'
   ContainerPort: 3000
   BranchName: main
   FullRepositoryId: drex7/aws-wk6-project-app

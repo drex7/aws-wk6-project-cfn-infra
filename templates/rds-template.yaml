@@ -53,6 +53,25 @@ Resources:
       DeletionProtection: false
       EnableCloudwatchLogsExports: [postgresql]
 
+  DBConnectionURLParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub /${AppName}/db/url
+      Type: String
+      Description: RDS db connection URL for application
+      Value: !Join
+        - ""
+        - - "postgresql://"
+          - !Sub "{{resolve:secretsmanager:${DBCredentials}:SecretString:username}}"
+          - ":"
+          - !Sub "{{resolve:secretsmanager:${DBCredentials}:SecretString:password}}"
+          - "@"
+          - !GetAtt DBInstance.Endpoint.Address
+          - ":"
+          - !GetAtt DBInstance.Endpoint.Port
+          - "/"
+          - !Sub "{{resolve:secretsmanager:${DBCredentials}:SecretString:database_name}}?schema=public"
+
 Outputs:
   DBEndpoint:
     Value: !GetAtt DBInstance.Endpoint.Address

@@ -2,15 +2,18 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: Top-level stack template that deploys a complete CI/CD pipeline with
   ECR, ECS, CodeBuild, VPC components and RDS.
 Parameters:
+  AppName:
+    Type: String
+    Default: GalleryApp-v2
+  PublicSubnetCidrs:
+    Type: CommaDelimitedList
+    Default: 10.0.1.0/24, 10.0.2.0/24
+  PrivateSubnetCidrs:
+    Type: CommaDelimitedList
+    Default: 10.0.3.0/24, 10.0.4.0/24
   VpcCidr:
     Type: String
     Default: 10.0.0.0/16
-  PublicSubnetCidrs:
-    Type: CommaDelimitedList
-  PrivateSubnetCidrs:
-    Type: CommaDelimitedList
-  AppName:
-    Type: String
   ProjectTag:
     Type: String
     Default: week6-lab1
@@ -22,7 +25,7 @@ Parameters:
     Default: latest
   ECSServiceName:
     Type: String
-    Default: GalleryXPAppService
+    Default: GalleryApp-v2-Service
   FullRepositoryId:
     Type: String
     Default: drex7/aws-wk6-project-app
@@ -36,7 +39,7 @@ Resources:
   NetworkingStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.eu-central-1.amazonaws.com/week6-cfn-template-bucket-854/templates/dfa336cb33e5585a396ba76f3ffc1835.template
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/week6-cfn-template-bucket-854/templates/5376eb8f54f4a3c9113720d40ed596e7.template
       Parameters:
         AppName:
           Ref: AppName
@@ -74,7 +77,7 @@ Resources:
   IAMStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.eu-central-1.amazonaws.com/week6-cfn-template-bucket-854/templates/53366595f205670df8b3a8c15abbc3b8.template
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/week6-cfn-template-bucket-854/templates/6656d97638ec0217531dbcb692970f03.template
       Parameters:
         AppName:
           Ref: AppName
