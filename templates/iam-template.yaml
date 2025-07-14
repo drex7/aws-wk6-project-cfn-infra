@@ -4,6 +4,7 @@ Description: Stack template for iam related resources
 Parameters:
   AppName: { Type: String }
   ProjectTag: { Type: String }
+  ECRRepoName: { Type: String }
 
 Resources:
   EventBridgeRole:
