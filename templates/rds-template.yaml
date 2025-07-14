@@ -35,11 +35,11 @@ Resources:
   DBInstance:
     Type: AWS::RDS::DBInstance
     Properties:
+      DBInstanceIdentifier: !Sub ${AppName}-db-instance
       Engine: postgres
-      EngineVersion: "15"
+      EngineVersion: "15.8"
       DBInstanceClass: db.t3.micro
       AllocatedStorage: 20
-      StorageType: gp3
       DBSubnetGroupName: !Ref DBSubnetGroup
       VPCSecurityGroups: [!Ref DBSecurityGroup]
       MasterUsername: !Sub "{{resolve:secretsmanager:${DBCredentials}::username}}"
@@ -50,6 +50,7 @@ Resources:
       StorageEncrypted: true
       BackupRetentionPeriod: 7
       DeletionProtection: false
+      EnablePerformanceInsights: true
       EnableCloudwatchLogsExports: [postgresql]
 
   DBConnectionURLParam:

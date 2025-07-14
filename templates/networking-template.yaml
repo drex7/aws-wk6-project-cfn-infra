@@ -326,4 +326,5 @@ Outputs:
   PrivateSubnetIds:
     Value: !Join [",", [!Ref PrivateSubnet1, !Ref PrivateSubnet2]]
   DBSecurityGroup: { Value: !Ref DBSecurityGroup }
+  ContainerSecurityGroup: { Value: !Ref ContainerSecurityGroup }
   ALBSecurityGroup: { Value: !Ref ALBSecurityGroup }
