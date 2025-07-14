@@ -65,7 +65,6 @@ Resources:
                   - iam:PassRole
                 Resource: 
                   - !GetAtt CodeDeployRole.Arn
-                  - !GetAtt CodeBuildRole.Arn
               - Effect: Allow
                 Action:
                   - codeconnections:UseConnection

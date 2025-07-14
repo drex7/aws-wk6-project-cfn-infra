@@ -118,6 +118,3 @@ Resources:
           Value: !Sub ${AppName}-pipeline
         - Key: lab
           Value: !Sub "${ProjectTag}"
-
-Outputs:
-  BlueGreenDeploymentPipelineArn: { Value: !GetAtt BlueGreenDeploymentPipeline.Arn }
