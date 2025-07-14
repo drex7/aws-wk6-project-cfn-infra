@@ -58,7 +58,6 @@ Resources:
         AppName: !Ref AppName
         ALBDnsName: !GetAtt NetworkingStack.Outputs.ALBDnsName
         ECSTaskRoleArn: !GetAtt IAMStack.Outputs.ECSTaskRoleArn
-        CodeBuildRoleArn: !GetAtt IAMStack.Outputs.CodeBuildRoleArn
         CodeDeployRoleArn: !GetAtt IAMStack.Outputs.CodeDeployRoleArn
         CodePipelineRoleArn: !GetAtt IAMStack.Outputs.CodePipelineRoleArn
         EventBridgeRoleArn: !GetAtt IAMStack.Outputs.EventBridgeRoleArn

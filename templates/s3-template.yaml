@@ -5,7 +5,6 @@ Parameters:
   AppName: { Type: String }
   ALBDnsName: { Type: String }
   ECSTaskRoleArn: { Type: String }
-  CodeBuildRoleArn: { Type: String }
   CodeDeployRoleArn: { Type: String }
   CodePipelineRoleArn: { Type: String }
   EventBridgeRoleArn: { Type: String }
@@ -72,7 +71,6 @@ Resources:
           - Effect: Allow
             Principal: 
               AWS: 
-                - !Ref CodeBuildRoleArn
                 - !Ref CodeDeployRoleArn
                 - !Ref CodePipelineRoleArn
                 - !Ref EventBridgeRoleArn
