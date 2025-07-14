@@ -17,6 +17,8 @@ Resources:
       EnableDnsSupport: true
       EnableDnsHostnames: true
       Tags:
+        - Key: Name
+          Value: !Sub ${AppName}VPC
         - Key: lab
           Value: !Sub "${ProjectTag}"
 
@@ -25,6 +27,8 @@ Resources:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
+        - Key: Name
+          Value: !Sub ${AppName}InternetGateway
         - Key: lab
           Value: !Sub "${ProjectTag}"
 
@@ -44,7 +48,7 @@ Resources:
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: PublicSubnet1
+          Value: !Sub ${AppName}PublicSubnet1
         - Key: lab
           Value: !Sub "${ProjectTag}"
 
@@ -57,7 +61,7 @@ Resources:
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: PublicSubnet2
+          Value: !Sub ${AppName}PublicSubnet2
         - Key: lab
           Value: !Sub "${ProjectTag}"
 
@@ -69,7 +73,7 @@ Resources:
       AvailabilityZone: !Select [0, !GetAZs ""]
       Tags:
         - Key: Name
-          Value: PrivateSubnet1
+          Value: !Sub ${AppName}PrivateSubnet1
         - Key: lab
           Value: !Sub "${ProjectTag}"
 
@@ -81,7 +85,7 @@ Resources:
       AvailabilityZone: !Select [1, !GetAZs ""]
       Tags:
         - Key: Name
-          Value: PrivateSubnet2
+          Value: !Sub ${AppName}PrivateSubnet2
         - Key: lab
           Value: !Sub "${ProjectTag}"
 
@@ -92,17 +96,27 @@ Resources:
       VpcId: !Ref MyVPC
       Tags:
         - Key: Name
-          Value: PublicRouteTable
+          Value: !Sub ${AppName}PublicRouteTable
         - Key: lab
           Value: !Sub "${ProjectTag}"
 
-  PrivateRouteTable:
+  PrivateRouteTable1:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref MyVPC
       Tags:
         - Key: Name
-          Value: PrivateRouteTable
+          Value: !Sub ${AppName}PrivateRouteTable1
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
+
+  PrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MyVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}PrivateRouteTable2
         - Key: lab
           Value: !Sub "${ProjectTag}"
 
@@ -131,13 +145,13 @@ Resources:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref PrivateSubnet1
-      RouteTableId: !Ref PrivateRouteTable
+      RouteTableId: !Ref PrivateRouteTable1
 
   PrivateSubnet2RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref PrivateSubnet2
-      RouteTableId: !Ref PrivateRouteTable
+      RouteTableId: !Ref PrivateRouteTable2
 
   # Security Groups
   ContainerSecurityGroup:
@@ -150,12 +164,9 @@ Resources:
           FromPort: 3000
           ToPort: 3000
           SourceSecurityGroupId: !Ref ALBSecurityGroup
-      SecurityGroupEgress:
-        - IpProtocol: "tcp"
-          CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
-          Value: ContainerSG
+          Value: !Sub ${AppName}ContainerSG
         - Key: lab
           Value: !Sub "${ProjectTag}"
 
@@ -169,14 +180,13 @@ Resources:
           FromPort: 80
           ToPort: 80
           CidrIp: 0.0.0.0/0
-      SecurityGroupEgress:
         - IpProtocol: tcp
-          FromPort: 3000
-          ToPort: 3000
-          CidrIp: !Ref VpcCidr
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
-          Value: ALBSecurityGroup
+          Value: !Sub ${AppName}ALBSecurityGroup
         - Key: lab
           Value: !Sub "${ProjectTag}"
 
@@ -192,6 +202,11 @@ Resources:
           SourceSecurityGroupId: !Ref ContainerSecurityGroup
           Description: Allows inbound traffic from ECS containers to RDS PostgreSQL
       VpcId: !Ref MyVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}DBSecurityGroup
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
 
   VPCEndpointSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -204,15 +219,27 @@ Resources:
           FromPort: 443
           ToPort: 443
           CidrIp: !Ref VpcCidr
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}VPCEndpointSecurityGroup
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
 
   # ======= VPC Endpoints ===============
   S3GatewayEndpoint:
     Type: AWS::EC2::VPCEndpoint
     Properties:
       ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
-      VPCid: !Ref MyVPC
+      VpcId: !Ref MyVPC
       VpcEndpointType: Gateway
-      RouteTableIds: [!Ref PrivateRouteTable]
+      RouteTableIds:
+        - !Ref PrivateRouteTable1
+        - !Ref PrivateRouteTable2
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}S3GatewayEndpoint
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
       # PolicyDocument:
       #   Statement:
       #     [{ Action: "s3:*", Effect: Allow, Principal: "*", Resource: "*" }]
@@ -221,51 +248,76 @@ Resources:
     Type: AWS::EC2::VPCEndpoint
     Properties:
       ServiceName: !Sub com.amazonaws.${AWS::Region}.ecr.dkr
-      VPCid: !Ref MyVPC
+      VpcId: !Ref MyVPC
       VpcEndpointType: Interface
       SecurityGroupIds: [!Ref VPCEndpointSecurityGroup]
       SubnetIds: [!Ref PrivateSubnet1, !Ref PrivateSubnet2]
       PrivateDnsEnabled: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}ECRDockerEndpoint
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
 
   ECRAPIEndpoint:
     Type: AWS::EC2::VPCEndpoint
     Properties:
       ServiceName: !Sub com.amazonaws.${AWS::Region}.ecr.api
       VpcEndpointType: Interface
-      VPCid: !Ref MyVPC
+      VpcId: !Ref MyVPC
       SecurityGroupIds: [!Ref VPCEndpointSecurityGroup]
       SubnetIds: [!Ref PrivateSubnet1, !Ref PrivateSubnet2]
       PrivateDnsEnabled: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}ECRAPIEndpoint
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
 
   CloudWatchLogsEndpoint:
     Type: AWS::EC2::VPCEndpoint
     Properties:
       ServiceName: !Sub com.amazonaws.${AWS::Region}.logs
       VpcEndpointType: Interface
-      VPCid: !Ref MyVPC
+      VpcId: !Ref MyVPC
       SecurityGroupIds: [!Ref VPCEndpointSecurityGroup]
       SubnetIds: [!Ref PrivateSubnet1, !Ref PrivateSubnet2]
       PrivateDnsEnabled: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}CloudWatchLogsEndpoint
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
 
   SecretsManagerEndpoint:
     Type: AWS::EC2::VPCEndpoint
     Properties:
       ServiceName: !Sub com.amazonaws.${AWS::Region}.secretsmanager
       VpcEndpointType: Interface
-      VPCid: !Ref MyVPC
+      Vp: !Ref MyVPC
       SecurityGroupIds: [!Ref VPCEndpointSecurityGroup]
       SubnetIds: [!Ref PrivateSubnet1, !Ref PrivateSubnet2]
       PrivateDnsEnabled: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}SecretsManagerEndpoint
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
 
   SSMEndpoint:
     Type: AWS::EC2::VPCEndpoint
     Properties:
       ServiceName: !Sub com.amazonaws.${AWS::Region}.ssm
       VpcEndpointType: Interface
-      VPCid: !Ref MyVPC
+      VpcId: !Ref MyVPC
       SecurityGroupIds: [!Ref VPCEndpointSecurityGroup]
       SubnetIds: [!Ref PrivateSubnet1, !Ref PrivateSubnet2]
       PrivateDnsEnabled: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}SSMEndpoint
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
 
 Outputs:
   VpcId: { Value: !Ref MyVPC }

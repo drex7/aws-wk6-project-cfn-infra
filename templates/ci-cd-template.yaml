@@ -21,6 +21,7 @@ Parameters:
   FullRepositoryId: { Type: String }
   GreenTargetGroupName: { Type: String }
   PipelineArtifactBucketName: { Type: String }
+  ProjectTag: { Type: String }
 
 Resources:
   # EventBridge Rule to detect new ECR image push events
@@ -39,7 +40,26 @@ Resources:
         - Arn: !Ref BlueGreenDeploymentPipeline
           RoleArn: !Ref EventBridgeRoleArn
           Id: DeployPipelineTarget
-          
+          InputTransformer:
+            InputPathsMap:
+              image-tag: $.detail.image-tag
+              repository-name: $.detail.repository-name
+            InputTemplate: |
+              {
+                "source": [
+                  {
+                    "s3": {
+                      "bucket": "<Bucket>",
+                      "key": "artifacts/<repository-name>/<image-tag>/imagedefinitions.json"
+                    }
+                  }
+                ]
+              }
+            InputTemplateParameters:
+              Bucket: !Ref PipelineArtifactBucketName
+              # RepoName: !Ref ECRRepository
+              # ImageTag: <imageTag>
+
   # CodeDeploy Application and Deployment Group for Blue/Green deployment
   CodeDeployApp:
     Type: AWS::CodeDeploy::Application
@@ -98,10 +118,10 @@ Resources:
                 Category: Source
                 Owner: AWS
                 Provider: S3
-                Version: "1"
+                Version: 1
               Configuration:
                 S3Bucket: !Ref PipelineArtifactBucketName
-                S3ObjectKey: !Sub "artifacts/${ECRRepoName}/latest/imagedefinitions.json"
+                S3ObjectKey: pipeline-extras.zip
                 PollForSourceChanges: false
               OutputArtifacts:
                 - Name: DeployArtifact
@@ -112,64 +132,19 @@ Resources:
               ActionTypeId:
                 Category: Deploy
                 Owner: AWS
-                Provider: CodeDeployToECS
+                Provider: CodeDeploy
                 Version: "1"
               RunOrder: 1
               Configuration:
                 ApplicationName: !Ref CodeDeployApp
                 DeploymentGroupName: !Ref DeploymentGroup
-                TaskDefinitionTemplateArtifact: DeployArtifact
-                AppSpecTemplateArtifact: DeployArtifact
-                Image1ContainerName: IMAGE1_NAME
-                Image1ArtifactName: DeployArtifact
               InputArtifacts:
                 - Name: DeployArtifact
-
-  # CodeBuild Project to build & deploy image to ECR
-  ECRDeployProject:
-    Type: AWS::CodeBuild::Project
-    Properties:
-      Name: !Sub ${AWS::StackName}-ECRBuildProject
-      Description: Build and deploy Docker image to ECR
-      ServiceRole: !Ref CodeBuildRoleArn
-      SourceVersion: main
-      Artifacts:
-        Type: S3
-        Location: !Ref PipelineArtifactBucketName
-        Name: build-artifact
-        NamespaceType: BUILD_ID
-        Packaging: ZIP
-      Environment:
-        Type: LINUX_LAMBDA_CONTAINER
-        ComputeType: BUILD_LAMBDA_1GB
-        Image: aws/codebuild/amazonlinux-x86_64-lambda-standard:nodejs20
-        EnvironmentVariables:
-          - Name: ECS_CLUSTER
-            Value: !Ref ECSClusterName
-          - Name: ECS_SERVICE
-            Value: !Ref ECSServiceName
-          - Name: CONTAINER_NAME
-            Value: !Ref ContainerName
-          - Name: CONTAINER_PORT
-            Value: !Ref ContainerPort
-          - Name: IMAGE_NAME
-            Value: !Sub ${ECSAppName}
-          - Name: ECR_REPO_NAME
-            Value: !Sub ${ECRRepoName}
-          - Name: ARTIFACT_BUCKET
-            Value: !Ref PipelineArtifactBucketName
-          - Name: ECR_REPOSITORY_URI
-            Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECRRepoName}"
-      Source:
-        Type: GITHUB
-        Location: https://github.com/drex7/aws-wk6-project-cfn-infra
-        GitCloneDepth: 1
-        Auth:
-          Type: OAUTH
-      Cache:
-        Type: NO_CACHE
-
+      Tags:
+        - Key: Project
+          Value: !Sub ${AppName}-pipeline
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
 
 Outputs:
   BlueGreenDeploymentPipelineArn: { Value: !GetAtt BlueGreenDeploymentPipeline.Arn }
-  ECRDeployProjectArn: { Value: !GetAtt ECRDeployProject.Arn }
