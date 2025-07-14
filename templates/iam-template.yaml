@@ -4,8 +4,6 @@ Description: Stack template for iam related resources
 Parameters:
   AppName: { Type: String }
   ProjectTag: { Type: String }
-  ECRRepoName: { Type: String }
-  # PipelineArtifactBucketArn: { Type: String }
 
 Resources:
   EventBridgeRole:
@@ -58,18 +56,15 @@ Resources:
                   - codedeploy:GetApplication
                   - codedeploy:GetApplicationRevision
                   - codedeploy:RegisterApplicationRevision
-                  - codedeploy:RegisterTaskDefinition
                 Resource: "*"  
               - Effect: Allow
                 Action:
-                  - iam:PassRole
-                Resource: 
-                  - !GetAtt CodeDeployRole.Arn
+                  - ecr:DescribeImages
+                Resource: !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/${ECRRepoName}
               - Effect: Allow
                 Action:
-                  - codeconnections:UseConnection
-                Resource:
-                  - !Sub arn:aws:codeconnections:${AWS::Region}:${AWS::AccountId}:connection/*
+                  - iam:PassRole
+                Resource: "*"
             
   CodeDeployRole:
     Type: AWS::IAM::Role
