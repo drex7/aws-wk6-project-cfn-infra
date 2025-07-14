@@ -35,12 +35,12 @@ jobs:
 
       - name: Package CodeDeploy artifacts
         run: |
-          cd pipeline-configs
-          zip ../pipeline-configs.zip appspec.yml taskdef.json
+          cd pipeline-extras
+          zip ../pipeline-extras.zip appspec.yml taskdef.json
 
       - name: Upload CodeDeploy artifacts to S3
         run: |
-          aws s3 cp pipeline-configs.zip s3://${{ secrets.S3_BUCKET_NAME }}/ --region ${{ secrets.AWS_REGION }}
+          aws s3 cp pipeline-extras.zip s3://${{ secrets.S3_BUCKET_NAME }}/ --region ${{ secrets.AWS_REGION }}
 
       - name: Clean artifacts
-        run: rm -f pipeline-configs.zip
+        run: rm -f pipeline-extras.zip
