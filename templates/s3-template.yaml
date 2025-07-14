@@ -2,7 +2,6 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: Stack template for S# resources
 
 Parameters:
-  AppName: { Type: String }
   ALBDnsName: { Type: String }
   ECSTaskRoleArn: { Type: String }
   CodeDeployRoleArn: { Type: String }

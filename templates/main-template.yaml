@@ -55,7 +55,6 @@ Resources:
     Properties:
       TemplateURL: !Sub ${TemplatesURL}/s3-template.yaml
       Parameters:
-        AppName: !Ref AppName
         ALBDnsName: !GetAtt ECSStack.Outputs.ALBDnsName
         ECSTaskRoleArn: !GetAtt IAMStack.Outputs.ECSTaskRoleArn
         CodeDeployRoleArn: !GetAtt IAMStack.Outputs.CodeDeployRoleArn
