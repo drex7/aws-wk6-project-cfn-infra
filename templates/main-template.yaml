@@ -3,19 +3,19 @@ Description: Top-level stack template that deploys a complete CI/CD pipeline wit
 
 Parameters:
   AppName: { Type: String, Default: GalleryApp-v2 }
+  ContainerPort: { Type: String, Default: 3000 }
+  ECRRepoName: { Type: String, Default: gallery-app-v2-ecr-repo }
+  ECRImageTag: { Type: String, Default: latest }
+  ECSServiceName: { Type: String, Default: GalleryApp-v2-Service }
   PublicSubnetCidrs: 
     Type: CommaDelimitedList
     Default: 10.0.1.0/24, 10.0.2.0/24
   PrivateSubnetCidrs: 
     Type: CommaDelimitedList
     Default: 10.0.3.0/24, 10.0.4.0/24
-  VpcCidr: { Type: String, Default: 10.0.0.0/16 }
   ProjectTag: { Type: String, Default: "week6-lab1" }
-  ECRRepoName: { Type: String, Default: gallery-app-v2-ecr-repo }
-  ECRImageTag: { Type: String, Default: latest }
-  ECSServiceName: { Type: String, Default: GalleryApp-v2-Service }
-  ContainerPort: { Type: String, Default: 3000 }
   TemplatesURL: { Type: String, Default: 'https://week6-cfn-template-bucket-854.s3.eu-central-1.amazonaws.com/templates' }
+  VpcCidr: { Type: String, Default: 10.0.0.0/16 }
   
 
 Resources:
