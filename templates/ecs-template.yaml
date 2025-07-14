@@ -197,6 +197,6 @@ Outputs:
   ECRRepoName: { Value: !Ref ECRRepository }
   ContainerName: { Value: !Sub "${AppName}Container" }
   ECSClusterName: { Value: !Ref ECSCluster }
-  ECSServiceName: { Value: !Ref ECSService.Name }
+  ECSServiceName: { Value: !GetAtt ECSService.Name }
   ECRRepoArn: { Value: !GetAtt ECRRepository.Arn }
   ECSAppName: { Value: !Sub "${AppName}ECSApp" }

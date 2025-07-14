@@ -55,7 +55,6 @@ Resources:
 
   S3Stack:
     Type: AWS::CloudFormation::Stack
-    DependsOn: [NetworkingStack, IAMStack]
     Properties:
       TemplateURL: !Sub ${TemplatesURL}/s3-template.yaml
       Parameters:
@@ -71,7 +70,6 @@ Resources:
   # Include ECS Stack
   ECSStack:
     Type: AWS::CloudFormation::Stack
-    DependsOn: [NetworkingStack, RDSStack, IAMStack, S3Stack]
     Properties:
       TemplateURL: !Sub ${TemplatesURL}/ecs-template.yaml
       Parameters:
@@ -109,53 +107,6 @@ Resources:
         PipelineArtifactBucketName: !GetAtt S3Stack.Outputs.PipelineArtifactBucketName
         ProjectTag: !Ref ProjectTag
 
-  # CodeDeployStack:
-  #   Type: AWS::CloudFormation::Stack
-  #   DependsOn: ECSStack
-  #   Properties:
-  #     TemplateURL: !Sub ${TemplatesURL}/codedeploy-template.yaml
-  #     Parameters:
-  #       AppName: !Ref AppName
-  #       ECSClusterName: !GetAtt ECSStack.Outputs.ECSClusterName
-  #       ECSServiceName: !GetAtt ECSStack.Outputs.ECSServiceName
-  #       BlueTargetGroupName: !GetAtt ECSStack.Outputs.BlueTargetGroupName
-  #       GreenTargetGroupName: !GetAtt ECSStack.Outputs.GreenTargetGroupName
-  #       AlbListenerArn: !GetAtt ECSStack.Outputs.ALBListenerArn
-  #       CodeDeployRoleArn: !GetAtt IAMStack.Outputs.CodeDeployRoleArn
-  #       ProjectTag: !Ref ProjectTag
-
-  # CodePipelineStack:
-  #   Type: AWS::CloudFormation::Stack
-  #   DependsOn: [ECSStack, CodeDeployStack, S3Stack]
-  #   Properties:
-  #     TemplateURL: !Sub ${TemplatesURL}/codepipeline-template.yaml
-  #     Parameters:
-  #       ECSAppName: !GetAtt ECSStack.Outputs.ECSAppName
-  #       ECRRepoName: !GetAtt ECSStack.Outputs.ECRRepoName
-  #       ContainerName: !GetAtt ECSStack.Outputs.ContainerName
-  #       ContainerImageTag: !Ref ECRImageTag
-  #       ContainerPort: !Ref ContainerPort
-  #       TaskDefinitionArn: !GetAtt ECSStack.Outputs.TaskDefinitionArn
-  #       ArtifactsBucketName: !GetAtt S3Stack.Outputs.ArtifactsBucketName
-  #       ECSClusterName: !GetAtt ECSStack.Outputs.ECSClusterName
-  #       ECSServiceName: !GetAtt ECSStack.Outputs.ECSServiceName
-  #       PipelineArtifactBucketName: !GetAtt S3Stack.Outputs.PipelineArtifactBucketName
-  #       CodeDeployAppName: !GetAtt CodeDeployStack.Outputs.CodeDeployAppNameName
-  #       CodeDeployDeploymentGroupName: !GetAtt CodeDeployStack.Outputs.CodeDeployDeploymentGroupName
-  #       CodePipelineRoleArn: !GetAtt IAMStack.Outputs.CodePipelineRoleArn
-  #       CodeBuildRoleArn: !GetAtt IAMStack.Outputs.CodeBuildRoleArn
-  #       FullRepositoryId: !Ref FullRepositoryId
-
-  # EventBridgeStack:
-  #   Type: AWS::CloudFormation::Stack
-  #   DependsOn: [CodePipelineStack, IAMStack, ECSStack]
-  #   Properties:
-  #     TemplateURL: !Sub ${TemplatesURL}/eventbridge-template.yaml
-  #     Parameters:
-  #       ECRRepoArn: !GetAtt ECSStack.Outputs.ECRRepoArn
-  #       PipelineStack: !GetAtt CodePipelineStack.Outputs.BlueGreenDeploymentPipelineArn
-  #       EventBridgeRoleArn: !GetAtt IAMStack.Outputs.EventBridgeRoleArn
-  #       PipelineArtifactBucketName: !GetAtt S3Stack.Outputs.PipelineArtifactBucketName
 
 Outputs:
   LoadBalancerDNS:
