@@ -1,18 +1,4 @@
-template-file-path: templates/main-template.yaml
-parameters:
-  AppName: 'GalleryApp-v2'
-  ContainerPort: 3000
-  ECSServiceName: 'GalleryApp-v2-Service'
-  ECRRepoName: 'gallery-app-v2-ecr-repo'
-  ECRImageTag: 'latest'
-  PublicSubnetCidrs: 
-    - '10.0.1.0/24'
-    - '10.0.2.0/24'
-  PrivateSubnetCidrs: 
-    - '10.0.3.0/24'
-    - '10.0.4.0/24'
-  ProjectTag: 'week6-lab1'
-  TemplatesURL: 'https://week6-cfn-template-bucket-854.s3.eu-central-1.amazonaws.com/templates'
-  VpcCidr: '10.0.0.0/16'
-
+template-file-path: >-
+  https://week6-cfn-template-bucket-854.s3.eu-central-1.amazonaws.com/templates/main-template.yaml
+parameters: {}
 tags: {}
