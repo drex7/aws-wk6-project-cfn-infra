@@ -6,7 +6,6 @@ Parameters:
   AppName: { Type: String }
   ContainerPort: { Type: Number, Default: 3000 }
   ContainerSecurityGroup: { Type: String }
-  DBEndpoint: { Type: String }
   ECRRepoName: { Type: String }
   ECRImageTag: { Type: String, Default: latest }
   ECSServiceName: { Type: String }

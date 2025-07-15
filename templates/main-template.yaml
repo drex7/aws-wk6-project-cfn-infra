@@ -72,7 +72,6 @@ Resources:
         AppName: !Ref AppName
         ContainerPort: !Ref ContainerPort
         ContainerSecurityGroup: !GetAtt NetworkingStack.Outputs.ContainerSecurityGroup
-        DBEndpoint: !GetAtt RDSStack.Outputs.DBEndpoint
         ECRImageTag: !Ref ECRImageTag
         ECRRepoName: !Ref ECRRepoName
         ECSServiceName: !Ref ECSServiceName
