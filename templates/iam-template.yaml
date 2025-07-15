@@ -181,58 +181,11 @@ Resources:
         - Key: lab
           Value: !Sub '${ProjectTag}'
 
-  # CodeConnectionsActionRole:
-  #   Type: AWS::IAM::Role
-  #   Properties:
-  #     AssumeRolePolicyDocument:
-  #       Statement:
-  #         - Action: sts:AssumeRole
-  #           Effect: Allow
-  #           Principal:
-  #             AWS: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:*
-  #       Version: "2012-10-17"
-  
-  # CodeConnectionsActionDefaultPolicy:
-  #   Type: AWS::IAM::Policy
-  #   Properties:
-  #     PolicyDocument:
-  #       Statement:
-  #         - Action: codestar-connections:UseConnection
-  #           Effect: Allow
-  #           Resource: !Ref ConnectionArn
-  #         - Action:
-  #             - s3:Abort*
-  #             - s3:DeleteObject*
-  #             - s3:GetBucket*
-  #             - s3:GetObject*
-  #             - s3:List*
-  #             - s3:PutObject
-  #             - s3:PutObjectLegalHold
-  #             - s3:PutObjectRetention
-  #             - s3:PutObjectTagging
-  #             - s3:PutObjectVersionTagging
-  #           Effect: Allow
-  #           Resource:
-  #             - !Sub ${PipelineArtifactBucketArn}
-  #             - !Sub ${PipelineArtifactBucketArn}/*
-  #         - Action:
-  #             - s3:PutObjectAcl
-  #             - s3:PutObjectVersionAcl
-  #           Effect: Allow
-  #           Resource: 
-  #             - !Sub ${PipelineArtifactBucketArn}
-  #             - !Sub ${PipelineArtifactBucketArn}/*
-  #       Version: "2012-10-17"
-  #     PolicyName: CodeConnectionsActionDefaultPolicy
-  #     Roles:
-  #       - !Ref CodeConnectionsActionRole  
-
 
 Outputs:
   EventBridgeRoleArn: { Value: !GetAtt EventBridgeRole.Arn }
   ECSTaskRoleArn: { Value: !GetAtt ECSTaskRole.Arn }
   ECSTaskExecutionRoleArn: { Value: !GetAtt ECSTaskExecutionRole.Arn }
-  # CodeConnectionsActionRoleArn: { Value: !GetAtt CodeConnectionsActionRole.Arn }
   CodePipelineRoleArn: { Value: !GetAtt CodePipelineRole.Arn }
   AutoScalingRoleArn: { Value: !GetAtt AutoScalingRole.Arn }
   CodeDeployRoleArn: { Value: !GetAtt CodeDeployRole.Arn }

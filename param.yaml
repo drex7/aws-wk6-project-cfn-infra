@@ -2,8 +2,8 @@ template-file-path: templates/main-template.yaml
 parameters:
   AppName: 'GalleryApp-v2'
   ContainerPort: 3000
-  ECSServiceName: 'GalleryApp-v2-Service'
   ECRRepoName: 'gallery-app-v2-ecr-repo'
+  ECSServiceName: 'GalleryApp-v2-Service'
   ECRImageTag: 'latest'
   PublicSubnetCidrs: 
     - '10.0.1.0/24'

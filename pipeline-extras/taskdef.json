@@ -21,18 +21,7 @@
 				}
 			],
 			"secrets": [
-				{
-					"name": "DB_USERNAME",
-					"valueFrom": "arn:aws:secretsmanager:eu-central-1:123456789012:secret:GalleryApp-v2/db-credentials:username"
-				},
-				{
-					"name": "DB_PASSWORD",
-					"valueFrom": "arn:aws:secretsmanager:eu-central-1:123456789012:secret:GalleryApp-v2/db-credentials:password"
-				},
-				{
-					"name": "DB_NAME",
-					"valueFrom": "arn:aws:secretsmanager:eu-central-1:123456789012:secret:GalleryApp-v2/db-credentials:database_name"
-				},
+				
 				{
 					"name": "DATABASE_URL",
 					"valueFrom": "arn:aws:ssm:eu-central-1:985539763589:parameter/GalleryApp-v2/db/url"
@@ -40,16 +29,8 @@
 			],
 			"environment": [
 				{
-					"name": "NUXT_AWS_S3_BUCKET",
+					"name": "AWS_S3_BUCKET",
 					"value": "webapp-images-v2-985539763589"
-				},
-				{
-					"name": "DATABASE_URL1",
-					"valueFrom": "postgresql://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?schema=public"
-				},
-				{
-					"name": "DATABASE_URL",
-					"valueFrom": "arn:aws:ssm:eu-central-1:985539763589:parameter/GalleryApp-v2/db/url"
 				}
 			]
 		}
@@ -66,7 +47,7 @@
 	"healthCheck": {
 		"command": [
 			"CMD-SHELL",
-			"curl -f http://localhost:8081/actuator/health || exit 1"
+			"curl -f http://localhost:8081/ || exit 1"
 		],
 		"interval": 10,
 		"timeout": 5,
