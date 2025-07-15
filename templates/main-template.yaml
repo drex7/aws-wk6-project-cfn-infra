@@ -91,6 +91,7 @@ Resources:
       TemplateURL: !Sub ${TemplatesURL}/ci-cd-template.yaml
       Parameters:
         AppName: !Ref AppName
+        ALBListenerArn: !GetAtt ECSStack.Outputs.ALBListenerArn
         BlueTargetGroupName: !GetAtt ECSStack.Outputs.BlueTargetGroupName
         CodeDeployRoleArn: !GetAtt IAMStack.Outputs.CodeDeployRoleArn 
         ECRRepoName: !Ref ECRRepoName
