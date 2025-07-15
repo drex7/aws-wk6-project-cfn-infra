@@ -111,5 +111,3 @@ Outputs:
     Value: !GetAtt S3Stack.Outputs.S3BucketName
   RDSSecretArn:
     Value: !GetAtt RDSStack.Outputs.DBSecretArn
-  ECRRepoURI:
-    Value: !GetAtt ECSStack.Outputs.ECRRepoURI
