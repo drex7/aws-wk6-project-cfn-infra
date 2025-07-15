@@ -94,6 +94,7 @@ Resources:
         ALBListenerArn: !GetAtt ECSStack.Outputs.ALBListenerArn
         BlueTargetGroupName: !GetAtt ECSStack.Outputs.BlueTargetGroupName
         CodeDeployRoleArn: !GetAtt IAMStack.Outputs.CodeDeployRoleArn 
+        CodePipelineRoleArn: !GetAtt IAMStack.Outputs.CodePipelineRoleArn
         ECRRepoName: !Ref ECRRepoName
         ECSClusterName: !GetAtt ECSStack.Outputs.ECSClusterName
         ECSServiceName: !GetAtt ECSStack.Outputs.ECSServiceName
