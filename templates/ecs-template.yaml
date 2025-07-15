@@ -56,7 +56,7 @@ Resources:
               awslogs-create-group: "true"
           Secrets:
             - Name: DATABASE_URL
-              From: 'arn:aws:ssm:eu-central-1:985539763589:parameter/GalleryApp-v2/db/url'
+              ValueFrom: 'arn:aws:ssm:eu-central-1:985539763589:parameter/GalleryApp-v2/db/url'
           Environment:
             - Name: AWS_S3_BUCKET
               Value: webapp-images-v2-985539763589
