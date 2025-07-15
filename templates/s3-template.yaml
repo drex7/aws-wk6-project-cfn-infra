@@ -85,6 +85,16 @@ Resources:
             Resource:
               - !Sub ${PipelineArtifactBucket}
               - !Sub ${PipelineArtifactBucket}/*
+          - Effect: Allow
+            Principal:
+              AWS:
+                - !Ref CodeDeployRoleArn
+                - !Ref CodePipelineRoleArn
+                - !Ref EventBridgeRoleArn
+            Action:
+              - s3:ListBucket
+            Resource:
+              - !Sub ${PipelineArtifactBucket}
 
 Outputs:
   S3BucketName:
