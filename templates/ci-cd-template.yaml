@@ -29,7 +29,7 @@ Resources:
           repository-name: [ !Ref ECRRepoName ]
           result: [ "SUCCESS" ]
       Targets:
-        - Arn: !Ref BlueGreenDeploymentPipeline
+        - Arn: !Sub arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${BlueGreenDeploymentPipeline}
           RoleArn: !Ref EventBridgeRoleArn
           Id: DeployPipelineTarget
 
