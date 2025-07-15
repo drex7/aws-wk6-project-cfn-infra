@@ -56,11 +56,11 @@ Resources:
               awslogs-create-group: "true"
           Secrets:
             - Name: DB_USERNAME
-              ValueFrom: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${AppName}/db-credentials:username"
+              ValueFrom: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/db-credentials:username"
             - Name: DB_PASSWORD
-              ValueFrom: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${AppName}/db-credentials:password"
+              ValueFrom: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/db-credentials:password"
             - Name: DB_NAME
-              ValueFrom: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${AppName}/db-credentials:database_name"
+              ValueFrom: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/db-credentials:database_name"
           Environment:
             - Name: AWS_S3_BUCKET
               Value: webapp-images-v2-985539763589
