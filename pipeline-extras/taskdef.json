@@ -11,7 +11,7 @@
 	"containerDefinitions": [
 		{
 			"name": "GalleryApp-v2-Container",
-			"image": "<IMAGE1_NAME>",
+			"image": "985539763589.dkr.ecr.eu-central-1.amazonaws.com/gallery-app-v2-ecr-repo:latest",
 			"essential": true,
 			"portMappings": [
 				{
