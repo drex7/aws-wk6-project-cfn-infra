@@ -81,8 +81,7 @@ Resources:
             Action:
               - s3:GetObject
               - s3:PutObject
-            Resource:
-              - !Sub ${PipelineArtifactBucket}/*
+            Resource: !Join ["", ["arn:aws:s3:::", !Ref PipelineArtifactBucket, "/*"]]
           - Effect: Allow
             Principal:
               AWS:
@@ -91,8 +90,7 @@ Resources:
                 - !Ref EventBridgeRoleArn
             Action:
               - s3:ListBucket
-            Resource:
-              - !Sub ${PipelineArtifactBucket}
+            Resource: !Join ["", ["arn:aws:s3:::", !Ref PipelineArtifactBucket]]
 
 Outputs:
   S3BucketName:
