@@ -107,7 +107,3 @@ Resources:
 Outputs:
   LoadBalancerDNS:
     Value: !GetAtt ECSStack.Outputs.ALBDnsName
-  S3BucketName:
-    Value: !GetAtt S3Stack.Outputs.S3BucketName
-  RDSSecretArn:
-    Value: !GetAtt RDSStack.Outputs.DBSecretArn
