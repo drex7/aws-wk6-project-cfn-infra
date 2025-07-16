@@ -62,7 +62,7 @@ Resources:
           HealthCheck:
             Command:
               - CMD-SHELL
-              - curl -f http://localhost:3000/ || exit 1
+              - curl -f http://localhost:3000/api/health || exit 1
             Interval: 10
             Timeout: 5
             Retries: 3
@@ -134,7 +134,7 @@ Resources:
   BlueTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      HealthCheckPath: /
+      HealthCheckPath: /api/health
       Name: BlueTargetGroup
       Port: !Ref ContainerPort
       Protocol: HTTP
@@ -148,7 +148,7 @@ Resources:
   GreenTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      HealthCheckPath: /
+      HealthCheckPath: /api/health
       Name: GreenTargetGroup
       Port: !Ref ContainerPort
       Protocol: HTTP
