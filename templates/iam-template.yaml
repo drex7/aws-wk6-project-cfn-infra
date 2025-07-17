@@ -162,6 +162,9 @@ Resources:
             Principal:
               Service: application-autoscaling.amazonaws.com
             Action: sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceAutoscaleRole
       Policies:
         - PolicyName: !Sub ${AppName}-ecs-service-autoscaling-policy
           PolicyDocument:
@@ -169,11 +172,14 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - application-autoscaling:*
-                  - cloudwatch:DescribeAlarms
-                  - cloudwatch:PutMetricAlarm
-                  - ecs:DescribeServices
-                  - ecs:UpdateService
+                  - "application-autoscaling:*"
+                  - "cloudwatch:DescribeAlarms"
+                  - "cloudwatch:PutMetricAlarm"
+                  - "ecs:DescribeServices"
+                  - "ecs:UpdateService"
+                  - "logs:PutLogEvents"
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
                 Resource: '*'
       Tags:
         - Key: Name
