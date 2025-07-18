@@ -21,7 +21,6 @@
 				}
 			],
 			"secrets": [
-				
 				{
 					"name": "DATABASE_URL",
 					"valueFrom": "arn:aws:ssm:eu-central-1:985539763589:parameter/GalleryApp-v2/db/url"
