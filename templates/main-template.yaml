@@ -14,7 +14,7 @@ Parameters:
     Type: CommaDelimitedList
     Default: 10.0.3.0/24, 10.0.4.0/24
   ProjectTag: { Type: String, Default: "week6-lab1" }
-  TemplatesURL: { Type: String, Default: 'https://week6-cfn-template-bucket-854.s3.eu-central-1.amazonaws.com/templates' }
+  TemplatesURL: { Type: String, Default: 'https://artifacts-gallery-app-v2-bucket-985539763589.s3.eu-central-1.amazonaws.com/templates' }
   VpcCidr: { Type: String, Default: 10.0.0.0/16 }
   
 
