@@ -1,6 +1,6 @@
 {
-	"executionRoleArn": "gallery-app-v2-ECSTaskExecutionRole",
-	"taskRoleArn": "gallery-app-v2-ECSTaskRole",
+	"executionRoleArn": "arn:aws:iam::985539763589:role/GalleryApp-v2-ECSTaskExecutionRole",
+	"taskRoleArn": "arn:aws:iam::985539763589:role/GalleryApp-v2-ECSTaskRole",
 	"networkMode": "awsvpc",
 	"cpu": "256",
 	"memory": "512",
