@@ -29,7 +29,7 @@ Resources:
           repository-name: [ !Ref ECRRepoName ]
           result: [ "SUCCESS" ]
       Targets:
-        - Arn: !Sub arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:/${AppName}-DeployPipeline
+        - Arn: !Sub arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${AppName}-DeployPipeline
           RoleArn: !Ref EventBridgeRoleArn
           Id: DeployPipelineTarget
 
