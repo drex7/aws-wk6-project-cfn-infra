@@ -10,6 +10,7 @@ Resources:
   EventBridgeRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Sub ${AppName}-EventBridgeRole 
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -22,7 +23,7 @@ Resources:
             Statement:
               - Effect: Allow
                 Action: codepipeline:StartPipelineExecution
-                Resource: !Sub arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:pipeline/${AppName}-DeployPipeline
+                Resource: !Sub arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${AppName}-DeployPipeline
 
   # IAM Role for CodePipeline
   CodePipelineRole:
