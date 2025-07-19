@@ -100,26 +100,6 @@ Resources:
         - Key: lab
           Value: !Sub "${ProjectTag}"
 
-  PrivateRouteTable1:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref MyVPC
-      Tags:
-        - Key: Name
-          Value: !Sub ${AppName}PrivateRouteTable1
-        - Key: lab
-          Value: !Sub "${ProjectTag}"
-
-  PrivateRouteTable2:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref MyVPC
-      Tags:
-        - Key: Name
-          Value: !Sub ${AppName}PrivateRouteTable2
-        - Key: lab
-          Value: !Sub "${ProjectTag}"
-
   # Routes
   PublicRoute:
     Type: AWS::EC2::Route
@@ -140,6 +120,27 @@ Resources:
     Properties:
       SubnetId: !Ref PublicSubnet2
       RouteTableId: !Ref PublicRouteTable
+
+  # Private Route Tables & Associations    
+  PrivateRouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MyVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}PrivateRouteTable1
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
+
+  PrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MyVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}PrivateRouteTable2
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
 
   PrivateSubnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
@@ -199,7 +200,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 5432
           ToPort: 5432
-          SourceSecurityGroupId: !Ref VPCEndpointSecurityGroup
+          SourceSecurityGroupId: !Ref ContainerSecurityGroup
           Description: Allows inbound traffic from ECS containers to RDS PostgreSQL
       VpcId: !Ref MyVPC
       Tags:
@@ -235,14 +236,13 @@ Resources:
       RouteTableIds:
         - !Ref PrivateRouteTable1
         - !Ref PrivateRouteTable2
+      PolicyDocument:
+        Statement: [{ Action: "s3:*", Effect: Allow, Principal: "*", Resource: "*" }]
       Tags:
         - Key: Name
           Value: !Sub ${AppName}S3GatewayEndpoint
         - Key: lab
           Value: !Sub "${ProjectTag}"
-      # PolicyDocument:
-      #   Statement:
-      #     [{ Action: "s3:*", Effect: Allow, Principal: "*", Resource: "*" }]
 
   ECRDockerEndpoint:
     Type: AWS::EC2::VPCEndpoint

@@ -3,7 +3,7 @@ Description: "Stack template for PostGreSQL Database infrastructure"
 
 Parameters:
   PrivateSubnetIds: { Type: CommaDelimitedList }
-  DBSecurityGroup: { Type: String }
+  DBSecurityGroup: { Type: AWS::EC2::SecurityGroup::Id }
   AppName: { Type: String }
 
 Resources:
