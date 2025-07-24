@@ -4,6 +4,7 @@ Description: Stack template for ECS infrastructure
 Parameters:
   ALBSecurityGroup: { Type: String }
   AppName: { Type: String }
+  AutoScalingRoleArn: { Type: String }
   ContainerPort: { Type: Number, Default: 3000 }
   ContainerSecurityGroup: { Type: String }
   ECRRepoName: { Type: String }
@@ -91,7 +92,6 @@ Resources:
     DependsOn: Listener
     Properties:
       Cluster: !Ref ECSCluster
-      DesiredCount: 0
       LaunchType: FARGATE
       TaskDefinition: !Ref TaskDefinition
       EnableExecuteCommand: true
@@ -121,6 +121,33 @@ Resources:
           Value: GalleryXPAppService
         - Key: lab
           Value: !Sub "${ProjectTag}"
+
+  # Target Auto Scaling
+  AutoScalingTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    DependsOn:
+      - ECSService
+    Properties:
+      MaxCapacity: 4
+      MinCapacity: 2
+      ResourceId: !Join ['', ['service/', !Ref ECSCluster, '/', !GetAtt ECSService.Name]]
+      RoleARN: !Sub AutoScalingRoleArn
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  # Auto Scaling Policy
+  AutoScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: !Sub ${AppName}-cpu-scaling-policy
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref AutoScalingTarget
+      TargetTrackingScalingPolicyConfiguration:
+        TargetValue: 50.0
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+        ScaleInCooldown: 60
+        ScaleOutCooldown: 60
 
   LoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer

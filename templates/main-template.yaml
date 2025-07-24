@@ -70,6 +70,7 @@ Resources:
       Parameters:
         ALBSecurityGroup: !GetAtt NetworkingStack.Outputs.ALBSecurityGroup
         AppName: !Ref AppName
+        AutoScalingRoleArn: !GetAtt IAMStack.Outputs.AutoScalingRoleArn
         ContainerPort: !Ref ContainerPort
         ContainerSecurityGroup: !GetAtt NetworkingStack.Outputs.ContainerSecurityGroup
         ECRImageTag: !Ref ECRImageTag
