@@ -1,4 +1,4 @@
-template-file-path: main-template.yaml
+template-file-path: templates/main-template.yaml
 parameters:
   VpcCidr: 10.0.0.0/16
   ECRImageTag: latest
