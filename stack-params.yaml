@@ -1,0 +1,14 @@
+template-file-path: main-template.yaml
+parameters:
+  VpcCidr: 10.0.0.0/16
+  ECRImageTag: latest
+  ProjectTag: week6-lab1
+  ContainerPort: '3000'
+  PublicSubnetCidrs: 10.0.1.0/24,10.0.2.0/24
+  TemplatesURL: >-
+    https://artifacts-gallery-app-v2-bucket-985539763589.s3.eu-central-1.amazonaws.com/templates
+  ECSServiceName: GalleryApp-v2-Service
+  PrivateSubnetCidrs: 10.0.3.0/24,10.0.4.0/24
+  ECRRepoName: gallery-app-v2-ecr-repo
+  AppName: GalleryApp-v2
+tags: {}
